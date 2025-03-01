@@ -15,7 +15,7 @@ API_HASH = environ.get('API_HASH', '0dc88c619c52613806822fd600eec006')   # COMPL
 BOT_TOKEN = environ.get('BOT_TOKEN', "6875902533:AAGMgm-VDchnuUqfceSy96Zle5o6RFDU9wk") # COMPLETAR CON TU BOT_TOKEN
 
 # Imágenes para el mensaje de inicio
-PICS = (environ.get('PICS', 'https://graph.org/file/ce1723991756e48c35aa1.jpg')).split()
+PICS = (environ.get('PICS', 'https://envs.sh/bu7.jpg')).split()
 
 # Administradores y Usuarios
 ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '').split()]
