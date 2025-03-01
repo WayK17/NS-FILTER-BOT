@@ -18,7 +18,7 @@ BOT_TOKEN = environ.get('BOT_TOKEN', "6875902533:AAGMgm-VDchnuUqfceSy96Zle5o6RFD
 PICS = (environ.get('PICS', 'https://envs.sh/bu7.jpg')).split()
 
 # Administradores y Usuarios
-ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '').split()]
+ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '6279723048').split()]
 auth_users = [int(user) if id_pattern.search(user) else user for user in environ.get('AUTH_USERS', '').split()]
 AUTH_USERS = (auth_users + ADMINS) if auth_users else []
 
