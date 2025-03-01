@@ -23,7 +23,7 @@ auth_users = [int(user) if id_pattern.search(user) else user for user in environ
 AUTH_USERS = (auth_users + ADMINS) if auth_users else []
 
 # Configuración de Canales
-LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '')) # COMPLETAR CON ID DE CANAL DE LOGS
+LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '-1002260222146')) # COMPLETAR CON ID DE CANAL DE LOGS
 CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '').split()]
 
 # Configuración de Suscripción
