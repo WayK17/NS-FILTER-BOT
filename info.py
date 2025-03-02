@@ -40,8 +40,8 @@ FILE_STORE_CHANNEL = [int(ch) for ch in (environ.get('FILE_STORE_CHANNEL', '')).
 DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '0').split()]
 
 # Configuración de MongoDB
-DATABASE_URI = environ.get('DATABASE_URI', "")    # COMPLETAR CON TU URL DE MONGODB
-DATABASE_NAME = environ.get('DATABASE_NAME', "techvjclonefilterbot")
+DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Elaina:meolvidexD@elaina.p0ndt.mongodb.net")    # COMPLETAR CON TU URL DE MONGODB
+DATABASE_NAME = environ.get('DATABASE_NAME', "Elaina")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'vjcollection')
 
 # Configuración de Enlaces
