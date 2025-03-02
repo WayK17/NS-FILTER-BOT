@@ -63,10 +63,10 @@ CLONE_DATABASE_URI = environ.get('CLONE_DATABASE_URI', "")
 PUBLIC_FILE_CHANNEL = environ.get('PUBLIC_FILE_CHANNEL', '')
 
 # Enlaces
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/vj_bot_disscussion')
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/+AeM_BeaRHtUyNTJh')
 CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/NessCloud')
-SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'vj_bot_disscussion')
-OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/kingvj01')
+SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'https://t.me/+GbypN_TPuU4wZTQx')
+OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/WayK17X')
 
 # Configuración de Funcionalidades
 AI_SPELL_CHECK = bool(environ.get('AI_SPELL_CHECK', True))
@@ -111,11 +111,11 @@ IMDB_TEMPLATE = environ.get("IMDB_TEMPLATE", f"{script.IMDB_TEMPLATE_TXT}")
 MAX_LIST_ELM = environ.get("MAX_LIST_ELM", None)
 
 # Opciones de Selección
-LANGUAGES = ["Latino", "Ingles", "Subtitulado"]
-SEASONS = ["temporada 1", "temporada 2", "temporada 3", "temporada 4", "temporada 5", "temporada 6", "temporada 7", "temporada 8", "temporada 9", "temporada 10"]
+LENGUAJE = ["Latino", "Ingles", "Subtitulado"]
+TEMPORADA = ["temporada 1", "temporada 2", "temporada 3", "temporada 4", "temporada 5", "temporada 6", "temporada 7", "temporada 8", "temporada 9", "temporada 10"]
 EPISODES = ["E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "E09", "E10", "E11", "E12", "E13", "E14", "E15", "E16", "E17", "E18", "E19", "E20", "E21", "E22", "E23", "E24", "E25", "E26", "E27", "E28", "E29", "E30", "E31", "E32", "E33", "E34", "E35", "E36", "E37", "E38", "E39", "E40"]
-QUALITIES = ["720p", "1080p", "1440p", "4K"]
-YEARS = ["1900", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"]
+CALIDAD = ["720p", "1080p", "1440p", "4K"]
+AÑO = ["1900", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"]
 
 # Transmisión y Descarga
 STREAM_MODE = bool(environ.get('STREAM_MODE', True))
@@ -132,7 +132,7 @@ RENAME_MODE = bool(environ.get('RENAME_MODE', False))
 AUTO_APPROVE_MODE = bool(environ.get('AUTO_APPROVE_MODE', False))
 
 # Reacciones
-REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "😐", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
+REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
 
 # Configuración Final de Bases de Datos
 if not MULTIPLE_DATABASE:
