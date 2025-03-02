@@ -39,10 +39,32 @@ SUPPORT_CHAT_ID = int(environ.get('SUPPORT_CHAT_ID', '')) if environ.get('SUPPOR
 FILE_STORE_CHANNEL = [int(ch) for ch in (environ.get('FILE_STORE_CHANNEL', '-1002487705767')).split()]
 DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '0').split()]
 
+# ... (todo tu código anterior hasta la sección de MongoDB)
+
 # Configuración de MongoDB
-DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Elaina:meolvidexD@elaina.p0ndt.mongodb.net")    # COMPLETAR CON TU URL DE MONGODB
+MULTIPLE_DATABASE = bool(environ.get('MULTIPLE_DATABASE', False))  # Nueva línea
+DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Elaina:meolvidexD@elaina.p0ndt.mongodb.net")
 DATABASE_NAME = environ.get('DATABASE_NAME', "Elaina")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'vjcollection')
+
+# Variables para múltiples bases de datos (agregadas)
+O_DB_URI = environ.get('O_DB_URI', DATABASE_URI)  # Valor predeterminado
+F_DB_URI = environ.get('F_DB_URI', DATABASE_URI)
+S_DB_URI = environ.get('S_DB_URI', DATABASE_URI)
+
+# Configuración de Bases de Datos Múltiples
+if not MULTIPLE_DATABASE:
+    USER_DB_URI = DATABASE_URI
+    OTHER_DB_URI = DATABASE_URI
+    FILE_DB_URI = DATABASE_URI
+    SEC_FILE_DB_URI = DATABASE_URI
+else:
+    USER_DB_URI = DATABASE_URI
+    OTHER_DB_URI = O_DB_URI
+    FILE_DB_URI = F_DB_URI
+    SEC_FILE_DB_URI = S_DB_URI
+
+# ... (el resto de tu código)
 
 # Configuración de Enlaces
 GRP_LNK = environ.get('GRP_LNK', 'https://t.me/+AeM_BeaRHtUyNTJh') # COMPLETAR CON TU ENLACE
@@ -95,15 +117,3 @@ URL = environ.get("URL", "https://tuapp.herokuapp.com/") # COMPLETAR CON TU URL
 RENAME_MODE = bool(environ.get('RENAME_MODE', False))
 AUTO_APPROVE_MODE = bool(environ.get('AUTO_APPROVE_MODE', False))
 REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "😐", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
-
-# Configuración de Bases de Datos Múltiples
-if MULTIPLE_DATABASE == False:  # Usa doble igual (==)
-    USER_DB_URI = DATABASE_URI
-    OTHER_DB_URI = DATABASE_URI
-    FILE_DB_URI = DATABASE_URI
-    SEC_FILE_DB_URI = DATABASE_URI
-else:
-    USER_DB_URI = DATABASE_URI
-    OTHER_DB_URI = O_DB_URI
-    FILE_DB_URI = F_DB_URI
-    SEC_FILE_DB_URI = S_DB_URI
