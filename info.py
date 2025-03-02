@@ -41,7 +41,7 @@ FILE_STORE_CHANNEL = [int(ch) for ch in environ.get('FILE_STORE_CHANNEL', '-1002
 DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1002316599591').split()]
 
 # Configuración de MongoDB
-DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Elaina:meolvidexD@elaina.p0ndt.mongodb.net")
+DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Elaina:m3olvidexD@elaina.p0ndt.mongodb.net")
 DATABASE_NAME = environ.get('DATABASE_NAME', "Elaina")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'nscollection')
 
