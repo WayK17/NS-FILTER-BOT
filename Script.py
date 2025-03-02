@@ -13,7 +13,7 @@ Aquí están todas mis funciones útiles:</b>"""
     ABOUT_TXT = """<b><blockquote>⍟───[ MIS DETALLES ]───⍟</blockquote>
     
 ‣ Nombre : <a href=https://t.me/{}>{}</a>
-‣ Creador : <a href={}>Dueño</a> 
+‣ Creador : <a href={}>@WayK</a> 
 ‣ Biblioteca : <a href='https://docs.pyrogram.org/'>Pyrogram</a> 
 ‣ Lenguaje : <a href='https://www.python.org/download/releases/3.0/'>Python 3</a> 
 ‣ Base de datos : <a href='https://www.mongodb.com/'>Mongo DB</a> 
