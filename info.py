@@ -36,7 +36,7 @@ INDEX_REQ_CHANNEL = int(environ.get('INDEX_REQ_CHANNEL', LOG_CHANNEL))
 SUPPORT_CHAT_ID = int(environ.get('SUPPORT_CHAT_ID', '')) if environ.get('SUPPORT_CHAT_ID') else None
 
 # Configuración de Archivos
-FILE_STORE_CHANNEL = [int(ch) for ch in (environ.get('FILE_STORE_CHANNEL', '')).split()]
+FILE_STORE_CHANNEL = [int(ch) for ch in (environ.get('FILE_STORE_CHANNEL', '-1002487705767')).split()]
 DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '0').split()]
 
 # Configuración de MongoDB
@@ -45,8 +45,8 @@ DATABASE_NAME = environ.get('DATABASE_NAME', "Elaina")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'vjcollection')
 
 # Configuración de Enlaces
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/tu_grupo') # COMPLETAR CON TU ENLACE
-CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/tu_canal') # COMPLETAR CON TU ENLACE
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/+AeM_BeaRHtUyNTJh') # COMPLETAR CON TU ENLACE
+CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/NessCloud') # COMPLETAR CON TU ENLACE
 SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'tu_grupo_soporte') # COMPLETAR CON TU GRUPO
 OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/tu_usuario') # COMPLETAR CON TU USUARIO
 
