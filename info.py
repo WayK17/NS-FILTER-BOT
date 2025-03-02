@@ -34,7 +34,7 @@ AUTH_CHANNEL = int(auth_channel) if (auth_channel := environ.get('AUTH_CHANNEL',
 # Configuración de Solicitudes
 REQST_CHANNEL = int(reqst_channel) if (reqst_channel := environ.get('REQST_CHANNEL', '')) and id_pattern.search(reqst_channel) else None
 INDEX_REQ_CHANNEL = int(environ.get('INDEX_REQ_CHANNEL', LOG_CHANNEL))
-SUPPORT_CHAT_ID = int(support_chat_id) if (support_chat_id := environ.get('SUPPORT_CHAT_ID', '-1002165037196')) and id_pattern.search(support_chat_id) else None
+SUPPORT_CHAT_ID = int(support_chat_id) if (support_chat_id := environ.get('SUPPORT_CHAT_ID', '')) and id_pattern.search(support_chat_id) else None
 
 # Configuración de Archivos
 FILE_STORE_CHANNEL = [int(ch) for ch in environ.get('FILE_STORE_CHANNEL', '-1002487705767').split()]
@@ -74,7 +74,7 @@ PM_SEARCH = bool(environ.get('PM_SEARCH', True))
 BUTTON_MODE = bool(environ.get('BUTTON_MODE', True))
 MAX_BTN = bool(environ.get('MAX_BTN', True))
 IS_TUTORIAL = bool(environ.get('IS_TUTORIAL', False))
-IMDB = bool(environ.get('IMDB', True))
+IMDB = bool(environ.get('IMDB', False))
 AUTO_FFILTER = bool(environ.get('AUTO_FFILTER', True))
 AUTO_DELETE = bool(environ.get('AUTO_DELETE', True))
 LONG_IMDB_DESCRIPTION = bool(environ.get("LONG_IMDB_DESCRIPTION", False))
@@ -104,7 +104,7 @@ TUTORIAL = environ.get('TUTORIAL', '')
 CACHE_TIME = int(environ.get('CACHE_TIME', 1800))
 MAX_B_TN = environ.get("MAX_B_TN", "5")
 PORT = environ.get("PORT", "8080")
-MSG_ALRT = environ.get('MSG_ALRT', 'Hola mis queridos amigos ❤️')
+MSG_ALRT = environ.get('MSG_ALRT', 'Únete a NESS Cloud 🗿')
 CUSTOM_FILE_CAPTION = environ.get("CUSTOM_FILE_CAPTION", f"{script.CAPTION}")
 BATCH_FILE_CAPTION = environ.get("BATCH_FILE_CAPTION", CUSTOM_FILE_CAPTION)
 IMDB_TEMPLATE = environ.get("IMDB_TEMPLATE", f"{script.IMDB_TEMPLATE_TXT}")
