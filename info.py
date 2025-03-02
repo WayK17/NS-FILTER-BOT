@@ -96,13 +96,13 @@ RENAME_MODE = bool(environ.get('RENAME_MODE', False))
 AUTO_APPROVE_MODE = bool(environ.get('AUTO_APPROVE_MODE', False))
 REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "😐", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
 
-if MULTIPLE_DATABASE = False:
-    USER_DB_URI = DATABASE_URI
-    OTHER_DB_URI = DATABASE_URI
-    FILE_DB_URI = DATABASE_URI
-    SEC_FILE_DB_URI = DATABASE_URI
-else:
-    USER_DB_URI = DATABASE_URI
-    OTHER_DB_URI = O_DB_URI
-    FILE_DB_URI = F_DB_URI
-    SEC_FILE_DB_URI = S_DB_URI
+if MULTIPLE_DATABASE == False:  # Usa doble igual (==)
+       USER_DB_URI = DATABASE_URI
+       OTHER_DB_URI = DATABASE_URI
+       FILE_DB_URI = DATABASE_URI
+       SEC_FILE_DB_URI = DATABASE_URI
+   else:
+       USER_DB_URI = DATABASE_URI
+       OTHER_DB_URI = O_DB_URI
+       FILE_DB_URI = F_DB_URI
+       SEC_FILE_DB_URI = S_DB_URI
