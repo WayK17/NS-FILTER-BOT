@@ -12,7 +12,7 @@ id_pattern = re.compile(r'^.\d+$')
 SESSION = environ.get('SESSION', 'TechVJBot')
 API_ID = int(environ.get('API_ID', '15353803'))
 API_HASH = environ.get('API_HASH', '0dc88c619c52613806822fd600eec006')
-BOT_TOKEN = environ.get('BOT_TOKEN', "6875902533:AAGMgm-VDchnuUqfceSy96Zle5o6RFDU9wk")
+BOT_TOKEN = environ.get('BOT_TOKEN', "7757301708:AAHSy5O2w-o4RLVb0CAQW_aUHK6fDtjTyFU")
 
 # Imágenes para el mensaje de inicio
 PICS = (environ.get('PICS', 'https://envs.sh/bu7.jpg')).split()
@@ -23,18 +23,18 @@ auth_users = [int(user) if id_pattern.search(user) else user for user in environ
 AUTH_USERS = (auth_users + ADMINS) if auth_users else []
 
 # Configuración de Canales
-LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '2260222146'))
-CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '2173951862').split()]
+LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '-1002260222146'))
+CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1002173951862').split()]
 
 # Configuración de Suscripción
-REQUEST_TO_JOIN_MODE = bool(environ.get('REQUEST_TO_JOIN_MODE', False))
-TRY_AGAIN_BTN = bool(environ.get('TRY_AGAIN_BTN', False))
-AUTH_CHANNEL = int(auth_channel) if (auth_channel := environ.get('AUTH_CHANNEL', '')) and id_pattern.search(auth_channel) else None
+REQUEST_TO_JOIN_MODE = bool(environ.get('REQUEST_TO_JOIN_MODE', True))
+TRY_AGAIN_BTN = bool(environ.get('TRY_AGAIN_BTN', True))
+AUTH_CHANNEL = int(auth_channel) if (auth_channel := environ.get('AUTH_CHANNEL', '-1002173951862')) and id_pattern.search(auth_channel) else None
 
 # Configuración de Solicitudes
 REQST_CHANNEL = int(reqst_channel) if (reqst_channel := environ.get('REQST_CHANNEL', '')) and id_pattern.search(reqst_channel) else None
 INDEX_REQ_CHANNEL = int(environ.get('INDEX_REQ_CHANNEL', LOG_CHANNEL))
-SUPPORT_CHAT_ID = int(support_chat_id) if (support_chat_id := environ.get('SUPPORT_CHAT_ID', '')) and id_pattern.search(support_chat_id) else None
+SUPPORT_CHAT_ID = int(support_chat_id) if (support_chat_id := environ.get('SUPPORT_CHAT_ID', '-1002165037196')) and id_pattern.search(support_chat_id) else None
 
 # Configuración de Archivos
 FILE_STORE_CHANNEL = [int(ch) for ch in environ.get('FILE_STORE_CHANNEL', '-1002487705767').split()]
@@ -64,7 +64,7 @@ PUBLIC_FILE_CHANNEL = environ.get('PUBLIC_FILE_CHANNEL', '')
 
 # Enlaces
 GRP_LNK = environ.get('GRP_LNK', 'https://t.me/vj_bot_disscussion')
-CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/vj_botz')
+CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/NessCloud')
 SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'vj_bot_disscussion')
 OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/kingvj01')
 
