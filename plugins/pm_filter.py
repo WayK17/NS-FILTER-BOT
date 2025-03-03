@@ -120,31 +120,15 @@ async def next_page(bot, query):
             for file in files
         ]
 
-        btn.insert(0, 
-            [
-                InlineKeyboardButton('Calidad', callback_data=f"qualities#{key}"),
-                InlineKeyboardButton("Episodio", callback_data=f"episodes#{key}"),
-                InlineKeyboardButton("Temporada",  callback_data=f"seasons#{key}")
-            ]
-        )
+        # ✅ CÓDIGO CORREGIDO (SOLO BOTÓN "ENVIAR TODO") ✅
+
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}"),
-            InlineKeyboardButton("Idioma", callback_data=f"languages#{key}"),
-            InlineKeyboardButton("Año", callback_data=f"years#{key}")
+            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
         ])
     else:
         btn = []
-        btn.insert(0, 
-            [
-                InlineKeyboardButton('Calidad', callback_data=f"qualities#{key}"),
-                InlineKeyboardButton("Episodio", callback_data=f"episodes#{key}"),
-                InlineKeyboardButton("Temporada",  callback_data=f"seasons#{key}")
-            ]
-        )
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}"),
-            InlineKeyboardButton("Idioma", callback_data=f"languages#{key}"),
-            InlineKeyboardButton("Año", callback_data=f"years#{key}")
+            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
         ])
     try:
         if settings['max_btn']:
@@ -156,7 +140,7 @@ async def next_page(bot, query):
                 off_set = offset - 10
             if n_offset == 0:
                 btn.append(
-                    [InlineKeyboardButton("⌫ 𝐁𝐀𝐂𝐊", callback_data=f"next_{req}_{key}_{off_set}"), InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages")]
+                    [InlineKeyboardButton("⌫  Atrás", callback_data=f"next_{req}_{key}_{off_set}"), InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages")]
                 )
             elif off_set is None:
                 btn.append([InlineKeyboardButton("Página", callback_data="pages"), InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages"), InlineKeyboardButton("Siguiente ➪", callback_data=f"next_{req}_{key}_{n_offset}")])
@@ -402,7 +386,7 @@ async def filter_yearss_cb_handler(client: Client, query: CallbackQuery):
             )
     else:
         btn.append(
-            [InlineKeyboardButton(text="NO HAY MÁS PÁGINAS DISPONIBLES",callback_data="pages")]
+            [InlineKeyboardButton(text="NESS Cloud",callback_data="pages")]
         )
     if lang != "homepage":
         req = query.from_user.id
@@ -568,7 +552,7 @@ async def filter_episodes_cb_handler(client: Client, query: CallbackQuery):
             )
     else:
         btn.append(
-            [InlineKeyboardButton(text="NO HAY MÁS PÁGINAS DISPONIBLES",callback_data="pages")]
+            [InlineKeyboardButton(text="NESS Cloud",callback_data="pages")]
         )
     if lang != "homepage":
         req = query.from_user.id
@@ -736,7 +720,7 @@ async def filter_languages_cb_handler(client: Client, query: CallbackQuery):
             )
     else:
         btn.append(
-            [InlineKeyboardButton(text="NO HAY MÁS PÁGINAS DISPONIBLES",callback_data="pages")]
+            [InlineKeyboardButton(text="NESS Cloud",callback_data="pages")]
         )
     if lang != "homepage":
         req = query.from_user.id
@@ -2647,7 +2631,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
             )
     else:
         btn.append(
-            [InlineKeyboardButton(text="NO HAY MÁS PÁGINAS DISPONIBLES",callback_data="pages")]
+            [InlineKeyboardButton(text="NESS Cloud",callback_data="pages")]
         )
     imdb = await get_poster(search, file=(files[0])['file_name']) if settings["imdb"] else None
     cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
@@ -3285,4 +3269,4 @@ async def global_filters(client, message, text=False):
                     logger.exception(e)
                 break
     else:
-        return False 
+        return False
