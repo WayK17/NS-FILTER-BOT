@@ -78,9 +78,9 @@ Comandos:
 
     SEC_STATUS_TXT = """<b>📊 Estadísticas:
     
-🗃️ Archivos totales: {}
+🗃️ Chats: {}
 👤 Usuarios: {}
-👥 Chats: {}
+👥 Archivos Totales: {}
 💾 Espacio usado: {}
 🆓 Espacio libre: {}</b>"""
 
