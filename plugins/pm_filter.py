@@ -1799,32 +1799,14 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
             ]
             for file in files
         ]
-        btn.insert(0, 
-            [
-                InlineKeyboardButton(f'Calidad', callback_data=f"qualities#{key}"),
-                InlineKeyboardButton("Episodio", callback_data=f"episodes#{key}"),
-                InlineKeyboardButton("Temporada",  callback_data=f"seasons#{key}")
-            ]
-        )
-        btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}"),
-            InlineKeyboardButton("Idioma", callback_data=f"languages#{key}"),
-            InlineKeyboardButton("Año", callback_data=f"years#{key}")
-        ])
-    else:
-        btn = []
-        btn.insert(0, 
-            [
-                InlineKeyboardButton(f'Calidad', callback_data=f"qualities#{key}"),
-                InlineKeyboardButton("Episodio", callback_data=f"episodes#{key}"),
-                InlineKeyboardButton("Temporada",  callback_data=f"seasons#{key}")
-            ]
-        )
-        btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}"),
-            InlineKeyboardButton("Idioma", callback_data=f"languages#{key}"),
-            InlineKeyboardButton("Año", callback_data=f"years#{key}")
-        ])
+            btn.insert(0, [
+        InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+    ])
+else:
+    btn = []
+    btn.insert(0, [
+        InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+    ])
     if offset != "":
         try:
             if settings['max_btn']:
@@ -1883,15 +1865,15 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
         )
         temp.IMDB_CAP[message.from_user.id] = cap
         if not settings["button"]:
-            cap+="<b>\n\n<u>🍿 Tus Archivos de Película/series 👇</u></b>\n"
+            cap+="<b>\n\n<u>🍿 | Tus Archivos de Película/series | 👇</u></b>\n"
             for file in files:
                 cap += f"<b>\n📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n</a></b>"
     else:
         if settings["button"]:
-            cap = f"<b>Los Resultados Para ☞ {search}\n\nRᴇǫᴜᴇsᴛᴇᴅ Bʏ ☞ {message.from_user.mention}\n\nʀᴇsᴜʟᴛ sʜᴏᴡ ɪɴ ☞ {remaining_seconds} sᴇᴄᴏɴᴅs\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ ☞ : {message.chat.title} \n\n⚠️ Después de 5 minutos, este mensaje será eliminado automáticamente.🗑️\n\n</b>"
+            cap = f"<b>| Los Resultados Para ➡️ {search}\n\n| Solicitado Por ➡️ {message.from_user.mention}\n\| Resultados Mostrados En ➡️ {remaining_seconds} Segundos\n\n| Proporcionado Por ➡️ : {message.chat.title} \n\n⚠️ | Después de 5 minutos, este mensaje será eliminado automáticamente |🗑️\n\n</b>"
         else:
-            cap = f"<b>Los Resultados Para ☞ {search}\n\nRᴇǫᴜᴇsᴛᴇᴅ Bʏ ☞ {message.from_user.mention}\n\nʀᴇsᴜʟᴛ sʜᴏᴡ ɪɴ ☞ {remaining_seconds} sᴇᴄᴏɴᴅs\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ ☞ : {message.chat.title} \n\n⚠️ Después de 5 minutos, este mensaje será eliminado automáticamente.🗑️\n\n</b>"
-            cap+="<b><u>🍿 Tus Archivos de Película/series 👇</u></b>\n\n"
+            cap = f"<b>| Los Resultados Para ➡️ {search}\n\n| Solicitado Por ➡️ {message.from_user.mention}\n\n| Resultados Mostrados En ➡️ {remaining_seconds} Segundos\n\n| Proporcionado Por ➡️ : {message.chat.title} \n\n⚠️ | Después de 5 minutos, este mensaje será eliminado automáticamente |🗑️\n\n</b>"
+            cap+="<b><u>🍿 | Tus Archivos de Película/series | 👇</u></b>\n\n"
             for file in files:
                 cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
 
@@ -1967,7 +1949,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
         logger.exception(e)
         reqst_gle = mv_rqst.replace(" ", "+")
         button = [[
-            InlineKeyboardButton("Gᴏᴏɢʟᴇ", url=f"https://www.google.com/search?q={reqst_gle}")
+            InlineKeyboardButton("Google", url=f"https://www.google.com/search?q={reqst_gle}")
         ]]
         if NO_RESULTS_MSG:
             await client.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, mv_rqst)))
@@ -1979,7 +1961,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
     if not movies:
         reqst_gle = mv_rqst.replace(" ", "+")
         button = [[
-            InlineKeyboardButton("Gᴏᴏɢʟᴇ", url=f"https://www.google.com/search?q={reqst_gle}")
+            InlineKeyboardButton("Google", url=f"https://www.google.com/search?q={reqst_gle}")
         ]]
         if NO_RESULTS_MSG:
             await client.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, mv_rqst)))
