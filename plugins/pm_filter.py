@@ -1799,14 +1799,13 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
             ]
             for file in files
         ]
-            btn.insert(0, [
-        InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
-    ])
-else:
-    btn = []
-    btn.insert(0, [
-        InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
-    ])
+        btn.insert(0, [
+            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+        ])
+    else:
+        btn.insert(0, [
+            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+        ])
     if offset != "":
         try:
             if settings['max_btn']:
