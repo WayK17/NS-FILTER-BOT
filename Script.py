@@ -76,7 +76,7 @@ Comandos:
 • /unban - Desbanear
 • /broadcast - Transmisión masiva</b>"""
 
-    STATUS_TXT = """<b>📊 Estadísticas:
+    SEC_STATUS_TXT = """<b>📊 Estadísticas:
     
 🗃️ Archivos totales: {}
 👤 Usuarios: {}
