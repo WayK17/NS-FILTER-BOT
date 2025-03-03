@@ -116,7 +116,6 @@ LANGUAGES = []
 SEASONS = []
 EPISODES = []
 QUALITIES = []
-YEARS = []
 
 # Transmisión y Descarga
 STREAM_MODE = bool(environ.get('STREAM_MODE', False))
