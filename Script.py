@@ -468,7 +468,7 @@ Todos los comandos relacionados con fijar mensajes se pueden encontrar aquí:
     BANGLADESH_INFO = """
  -_- """
 
-RENAME_TXT = """
+    RENAME_TXT = """
 🌌 <b><u>CÓMO CONFIGURAR LA MINIATURA</u></b>
   
 •> /set_thumb - envía cualquier imagen para configurar automáticamente la miniatura.
