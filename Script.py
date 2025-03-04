@@ -490,10 +490,10 @@ Ejemplo:- /set_caption 📕 Nombre del Archivo: {filename}
 •> /rename - envía cualquier archivo, haz clic en la opción de renombrar, escribe el nuevo nombre del archivo y
 luego selecciona [ documento, video, audio ] 👈 elige esta opción.
 """
-
     STREAM_TXT = """<b><u>CÓMO OBTENER EL ENLACE DE TRANSMISIÓN Y DESCARGA :</u>
 
 /stream - obtén el enlace transmitible y descargable de cualquier archivo</b>"""
+
 
 
 # Don't Remove Credit @VJ_Botz
