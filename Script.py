@@ -194,12 +194,12 @@ Por favor, revisa la ortografía en Google o IMDb..."""
 
 🫵 No hay nada de Información"""
 
-   REQINFO = """
+    REQINFO = """
 ⚠ INFORMACIÓN ⚠
 
 Después de 5 minutos este mensaje se eliminará automáticamente.
 
-Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""
+Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""  # ✅ Correcto
 
     SELECT = """SELECCIONA tu idioma preferido, calidad, temporada y episodio"""
 
