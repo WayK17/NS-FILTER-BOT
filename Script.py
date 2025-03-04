@@ -143,10 +143,13 @@ Usa /stream para obtener enlace descargable de cualquier archivo</b>"""
 |_| \_\\___/ |____/  |_|       |_|       |_|  |_|     |_| \_\  |____/  \___/   |_|  
     """
     
-    RESTART_TXT = """<b>𝖡𝗈𝗍 𝖱𝖾𝗌𝗍𝖺𝗋𝗍𝖾𝖽 !
+    RESTART_TXT = """
+<b>Bot Reiniciado !
 
-📅 𝖣𝖺𝗍𝖾 : {}
-⏰ 𝖳𝗂𝗆𝖾 : {}</b>"""
+📅 Fecha : <code>{}</code>
+⏰ Tiempo : <code>{}</code>
+🌐 Zona horaria : <code>Asia/Kolkata</code>
+🛠️ Estado de compilación : <code>v2.7.1 [ Estable ]</code></b>"""
 
 # Añade estos nuevos atributos
     SHORTLINK_INFO = "Información de enlace corto no disponible"
