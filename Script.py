@@ -147,3 +147,10 @@ Usa /stream para obtener enlace descargable de cualquier archivo</b>"""
 
 📅 𝖣𝖺𝗍𝖾 : {}
 ⏰ 𝖳𝗂𝗆𝖾 : {}</b>"""
+
+# Añade estos nuevos atributos
+    SHORTLINK_INFO = "Información de enlace corto no disponible"
+    
+    ALL_FILTERS = "Filtros actuales para {}"
+    
+    CUDNT_FND = "Lo siento, no pude encontrar resultados para: {}"
