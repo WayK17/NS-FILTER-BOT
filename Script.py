@@ -158,7 +158,7 @@ Nombre - {}"""
 
     ALRT_TXT = """Hᴏʟᴀ {},
 Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
-Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ,,,"""
+Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ..."""
 
     OLD_ALRT_TXT = """Hᴇʏ {},
 Esᴛás Usᴀɴᴅᴏ Uɴᴏ Dᴇ Mɪs Mᴇɴsᴀɪᴇs Aɴᴛɪɢᴜᴏs, 
@@ -197,7 +197,7 @@ Por favor, revisa la ortografía en Google o IMDb..."""
     REQINFO = """
 ⚠ INFORMACIÓN ⚠
 
-Después de 5 minutos este mensaje se eliminará automáticamente.
+Después de 5 Minutos Este Mensaje Se Eliminará Automáticamente.
 
 Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""  # ✅ Correcto
 
