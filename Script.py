@@ -220,10 +220,9 @@ Mensaje <b>: {}</b>"""
 ⚙️ Tamaño: {file_size}</b>"""
 
     IMDB_TEMPLATE_TXT = """
-<b>Resultado de Búsqueda 🔍: {qurey}
-
+<b>🔍 | Resultado de Búsqueda : {qurey}
 🎬 | IMDB Detalles:
-━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━
 🏷 | <b>Título</b>: <a href={url}>{title}</a>
 🎭 | Géneros: {genres}
 📆 | Año: <a href={url}/releaseinfo>{year}</a>
@@ -232,10 +231,10 @@ Mensaje <b>: {}</b>"""
 📀 | Duración: {runtime} minutos
 📆 | Fecha de lanzamiento: {release_date}
 🎛 | País: <code>{countries}</code>
-━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━
 ⏰ Resultado mostrado en: {remaining_seconds} <i>segundos</i> 🔥
 ━━━━━━━━━━━━━━━
-📨 | Solicitado Por: {message.from_user.mention}</b>"""
+📨 | Solicitado Por: {message.from_user.mention} 🐒</b>"""
 
     ALL_FILTERS = """
 <b>Hola {}, estos son mis tres tipos de filtros.</b>"""
