@@ -1826,7 +1826,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
             )
     else:
         btn.append(
-            [InlineKeyboardButton(text="ᑎᗴՏՏ ᑕᒪOᑌᗪ",callback_data="pages")]
+            [InlineKeyboardButton(text="Nᴇss Cʟᴏᴜᴅ",callback_data="pages")]
         )
     imdb = await get_poster(search, file=(files[0])['file_name']) if settings["imdb"] else None
     cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
