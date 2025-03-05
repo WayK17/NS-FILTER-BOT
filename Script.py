@@ -5,7 +5,7 @@
 class script(object):
     START_TXT = """<b><blockquote>Hola {} 👋,</blockquote>
     
-Soy el Bot de filtro automático más avanzado y poderoso. Puedes usarme en tu Grupo.. </b>"""
+Soy el Bot de Filtrado Automático más Avanzado y Poderoso. Puedes Usarme en tu Grupo.. </b>"""
 
     CLONE_START_TXT = """<b><blockquote>Hola {}, mi nombre es <a href=https://t.me/{}>{}</a></blockquote>
     
@@ -156,18 +156,18 @@ Añadido por - {}"""
 ID - <code>{}</code>
 Nombre - {}"""
 
-    ALRT_TXT = """Hola {},
-esto no es tu solicitud de película,
-solicita la tuya..."""
+    ALRT_TXT = """Hᴏʟᴀ {},
+Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
+Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ,,,"""
 
-    OLD_ALRT_TXT = """Hey {},
-estás usando uno de mis mensajes antiguos, 
-por favor envía la solicitud de nuevo."""
+    OLD_ALRT_TXT = """Hᴇʏ {},
+Esᴛás Usᴀɴᴅᴏ Uɴᴏ Dᴇ Mɪs Mᴇɴsᴀɪᴇs Aɴᴛɪɢᴜᴏs, 
+Pᴏʀ Fᴀᴠᴏʀ Eɴᴠíᴀ Lᴀ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Nᴜᴇᴠᴏ."""
 
-    CUDNT_FND = """No pude encontrar nada relacionado con {}
-¿Querías decir alguno de estos?"""
+    CUDNT_FND = """No Pude Encontrar Mada Relacionado Con {}
+¿Querías Decir Alguno De Estos?"""
 
-    I_CUDNT = """<b>Lo siento, no se encontraron archivos para tu solicitud {} 😕
+    I_CUDNT = """<b>Lo Siento, Mo Se Encontraron Archivos Para Tu Solicitud {} 😕
   
 Revisa tu ortografía en Google y prueba de nuevo 😃
 
@@ -226,7 +226,7 @@ Mensaje <b>: {}</b>"""
 🏷 | <b>Título</b>: <a href={url}>{title}</a>
 🎭 | Géneros: {genres}
 📆 | Año: <a href={url}/releaseinfo>{year}</a>
-🌟 | Calificación: <a href={url}/ratings>{rating}</a> / 10 (basado en {votes} valoraciones de usuarios.)
+🌟 | Calificación: <a href={url}/ratings>{rating}</a> / 10
 ☀️ | Idioma: <code>{languages}</code>
 📀 | Duración: {runtime} minutos
 📆 | Fecha de lanzamiento: {release_date}
