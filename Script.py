@@ -164,10 +164,10 @@ Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ..."""
 Esᴛás Usᴀɴᴅᴏ Uɴᴏ Dᴇ Mɪs Mᴇɴsᴀɪᴇs Aɴᴛɪɢᴜᴏs, 
 Pᴏʀ Fᴀᴠᴏʀ Eɴᴠíᴀ Lᴀ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Nᴜᴇᴠᴏ."""
 
-    CUDNT_FND = """No Pude Encontrar Mada Relacionado Con {}
+    CUDNT_FND = """No Pude Encontrar Nada Relacionado Con {}
 ¿Querías Decir Alguno De Estos?"""
 
-    I_CUDNT = """<b>Lo Siento, Mo Se Encontraron Archivos Para Tu Solicitud {} 😕
+    I_CUDNT = """<b>Lo Siento, No Se Encontraron Archivos Para Tu Solicitud {} 😕
   
 Revisa tu ortografía en Google y prueba de nuevo 😃
 
@@ -182,11 +182,11 @@ Ejemplo : Loki S01 o Loki S01E04 o Lucifer S03E24
 🚯 No uses ➠ ':(!,./</b>"""
 
     I_CUD_NT = """No pude encontrar ninguna película relacionada con {}.
-Por favor, revisa la ortografía en Google o IMDb..."""
+Por favor, revisa la ortografía en Google o IMDB..."""
 
-    MVE_NT_FND = """Película no encontrada en la base de datos..."""
+    MVE_NT_FND = """Película No Encontrada En La base de datos..."""
 
-    TOP_ALRT_MSG = """Buscando película en la base de datos..."""
+    TOP_ALRT_MSG = """Buscando película en la Base De Datos..."""
 
     MELCOW_ENG = """<b>Hola {} 😍, y bienvenido al grupo {} ❤️</b>"""
 
