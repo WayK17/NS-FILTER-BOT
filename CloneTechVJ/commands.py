@@ -27,7 +27,7 @@ async def start(client, message):
         ]]
         if cd["update_channel_link"] != None:
             up = cd["update_channel_link"]
-            buttons.append([InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)])
+            buttons.append([InlineKeyboardButton('🍿 Únete a Nuestro Canal 🍿', url=up)])
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply(script.CLONE_START_TXT.format(message.from_user.mention if message.from_user else message.chat.title, me.username, me.first_name), reply_markup=reply_markup)
         return 
@@ -42,9 +42,9 @@ async def start(client, message):
         ]]
         if cd["update_channel_link"] != None:
             up = cd["update_channel_link"]
-            buttons.append([InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)])
+            buttons.append([InlineKeyboardButton('🍿 Únete a Nuestro Canal 🍿', url=up)])
         reply_markup = InlineKeyboardMarkup(buttons)
-        m=await message.reply_sticker("CAACAgUAAxkBAAEKVaxlCWGs1Ri6ti45xliLiUeweCnu4AACBAADwSQxMYnlHW4Ls8gQMAQ") 
+        m=await message.reply_sticker("CAACAgEAAxkBAAIFz2fH6LPJjSJ_P7IKaCMPR7leYWuGAAJJAQACYyRIRR3DLbafKWulHgQ") 
         await asyncio.sleep(1)
         await m.delete()
         await message.reply_text(
