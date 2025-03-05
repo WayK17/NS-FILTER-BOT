@@ -221,12 +221,13 @@ Mensaje <b>: {}</b>"""
 
     IMDB_TEMPLATE_TXT = """
 <b>Resultado de Búsqueda 🔍: {qurey}
+
 🎬 | IMDB Detalles:
 ━━━━━━━━━━━━━━━
 🏷 | <b>Título</b>: <a href={url}>{title}</a>
 🎭 | Géneros: {genres}
 📆 | Año: <a href={url}/releaseinfo>{year}</a>
-🌟 | Calificación: <a href={url}/ratings>{rating}</a> / 10
+🌟 | Calificación: <a href={url}/ratings>{rating}</a> / 10 ⭐
 ☀️ | Idioma: <code>{languages}</code>
 📀 | Duración: {runtime} minutos
 📆 | Fecha de lanzamiento: {release_date}
