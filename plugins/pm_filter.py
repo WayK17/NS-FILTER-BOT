@@ -168,9 +168,9 @@ async def next_page(bot, query):
             else:
                 btn.append(
                     [
-                        InlineKeyboardButton("⌫  Regresar", callback_data=f"next_{req}_{key}_{off_set}"),
+                        InlineKeyboardButton("⬅ Regresar", callback_data=f"next_{req}_{key}_{off_set}"),
                         InlineKeyboardButton(f"{math.ceil(int(offset)/int(MAX_B_TN))+1} / {math.ceil(total/int(MAX_B_TN))}", callback_data="pages"),
-                        InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")
+                        InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
     except KeyError:
@@ -183,16 +183,15 @@ async def next_page(bot, query):
             off_set = offset - 10
         if n_offset == 0:
             btn.append(
-                [InlineKeyboardButton("⬅ Previous Page", callback_data=f"next_{req}_{key}_{off_set}"), InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages")]
+                [InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}")]
             )
         elif off_set is None:
-            btn.append([InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages"), InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")])
+            btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
         else:
             btn.append(
                 [
-                    InlineKeyboardButton("⬅ Previous Page", callback_data=f"next_{req}_{key}_{off_set}"),
-                    InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages"),
-                    InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")
+                    InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
+                    InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
                 ],
             )
     if not settings["button"]:
