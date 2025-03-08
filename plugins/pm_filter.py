@@ -123,12 +123,12 @@ async def next_page(bot, query):
         # ✅ CÓDIGO CORREGIDO (SOLO BOTÓN "ENVIAR TODO") ✅
 
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Enviar Todo 🥵", callback_data=f"sendfiles#{key}")
         ])
     else:
         btn = []
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Enviar Todo 🥵", callback_data=f"sendfiles#{key}")
         ])
     try:
         if settings['max_btn']:
@@ -140,16 +140,15 @@ async def next_page(bot, query):
                 off_set = offset - 10
             if n_offset == 0:
                 btn.append(
-                    [InlineKeyboardButton("⬅ Regresar", callback_data=f"next_{req}_{key}_{off_set}"), InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages")]
+                    [InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}")]
                 )
             elif off_set is None:
-                btn.append([InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages"), InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")])
+                btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
             else:
                 btn.append(
                     [
-                        InlineKeyboardButton("⬅ Previous Page", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton(f"{math.ceil(int(offset)/10)+1} / {math.ceil(total/10)}", callback_data="pages"),
-                        InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")
+                        InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
+                        InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
         else:
@@ -161,15 +160,14 @@ async def next_page(bot, query):
                 off_set = offset - int(MAX_B_TN)
             if n_offset == 0:
                 btn.append(
-                    [InlineKeyboardButton("⬅ Regresar",callback_data=f"next_{req}_{key}_{off_set}"), InlineKeyboardButton(f"{math.ceil(int(offset)/int(MAX_B_TN))+1} / {math.ceil(total/int(MAX_B_TN))}", callback_data="pages")]
+                    [InlineKeyboardButton("⬅ Atrás",callback_data=f"next_{req}_{key}_{off_set}")]
                 )
             elif off_set is None:
-                btn.append([InlineKeyboardButton(f"{math.ceil(int(offset)/int(MAX_B_TN))+1} / {math.ceil(total/int(MAX_B_TN))}", callback_data="pages"), InlineKeyboardButton("➡ Next Page", callback_data=f"next_{req}_{key}_{n_offset}")])
+                btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
             else:
                 btn.append(
                     [
-                        InlineKeyboardButton("⬅ Regresar", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton(f"{math.ceil(int(offset)/int(MAX_B_TN))+1} / {math.ceil(total/int(MAX_B_TN))}", callback_data="pages"),
+                        InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
                         InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
