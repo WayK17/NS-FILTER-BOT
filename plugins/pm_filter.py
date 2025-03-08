@@ -123,12 +123,12 @@ async def next_page(bot, query):
         # ✅ CÓDIGO CORREGIDO (SOLO BOTÓN "ENVIAR TODO") ✅
 
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo 🥵", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
         ])
     else:
         btn = []
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo 🥵", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
         ])
     try:
         if settings['max_btn']:
@@ -1800,26 +1800,26 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
             for file in files
         ]
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
         ])
     else:
         btn.insert(0, [
-            InlineKeyboardButton("Enviar Todo", callback_data=f"sendfiles#{key}")
+            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
         ])
     if offset != "":
         try:
             if settings['max_btn']:
                 btn.append(
-                    [InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="➡ Next Page",callback_data=f"next_{req}_{key}_{offset}")]
+                    [InlineKeyboardButton(text="➡ Siguiente",callback_data=f"next_{req}_{key}_{offset}")]
                 )
             else:
                 btn.append(
-                    [InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/int(MAX_B_TN))}",callback_data="pages"), InlineKeyboardButton(text="➡ Next Page",callback_data=f"next_{req}_{key}_{offset}")]
+                    [InlineKeyboardButton(text="➡ Siguiente",callback_data=f"next_{req}_{key}_{offset}")]
                 )
         except KeyError:
             await save_group_settings(message.chat.id, 'max_btn', True)
             btn.append(
-                [InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="➡ Next Page",callback_data=f"next_{req}_{key}_{offset}")]
+                [InlineKeyboardButton(text="➡ Siguiente",callback_data=f"next_{req}_{key}_{offset}")]
             )
     else:
         btn.append(
@@ -1973,7 +1973,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
     SPELL_CHECK[mv_id] = movielist
     if AI_SPELL_CHECK == True and vj_search == True:
         vj_search_new = False
-        vj_ai_msg = await reply_msg.edit_text("<i>⚠ Ningún artículo encontrado para su consulta. Compruebe dos veces la ortografía o intente buscar en Google.</i>")
+        vj_ai_msg = await reply_msg.edit_text("<i>⚠ No item found for your query. Please double-check the spelling or try searching on Google.</i>")
         movienamelist = []
         movienamelist += [movie.get('title') for movie in movies]
         for techvj in movienamelist:
