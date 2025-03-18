@@ -37,7 +37,7 @@ INDEX_REQ_CHANNEL = int(environ.get('INDEX_REQ_CHANNEL', LOG_CHANNEL))
 SUPPORT_CHAT_ID = int(support_chat_id) if (support_chat_id := environ.get('SUPPORT_CHAT_ID', '-1002409857165')) and id_pattern.search(support_chat_id) else None
 
 # Configuración de Archivos
-FILE_STORE_CHANNEL = [int(ch) for ch in environ.get('FILE_STORE_CHANNEL', '-1002487705767').split()]
+FILE_STORE_CHANNEL = [int(ch) for ch in environ.get('FILE_STORE_CHANNEL', '-1002691651049').split()]
 DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1002316599591').split()]
 
 # Configuración de MongoDB
