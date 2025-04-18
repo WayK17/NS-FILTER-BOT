@@ -105,34 +105,34 @@ async def start(client, message):
                         btn.append([InlineKeyboardButton("↻ Intentar de Nuevo", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
             if REQUEST_TO_JOIN_MODE == True:
                 if TRY_AGAIN_BTN == True:
-                    text = """<b>🚧 Acceso Restringido 🚧</b>
+                    text = """*🚧 Acceso Restringido 🚧*
 
-<b>Hola {mention} 👋🏼!</b>
+*Hola {mention} 👋🏼!*
 
-Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+Para acceder a estos archivos, debes ser miembro del *CANAL*.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
 
 ¡Gracias por tu apoyo! 🙌✨"""
                 else:
                     await db.set_msg_command(message.from_user.id, com=message.command[1])
-                    text = """<b>🚧 Acceso Restringido 🚧</b>
+                    text = """*🚧 Acceso Restringido 🚧*
 
-<b>Hola {mention} 👋🏼!</b>
+*Hola {mention} 👋🏼!*
 
-Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+Para acceder a estos archivos, debes ser miembro del *CANAL*.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
 
 ¡Gracias por tu apoyo! 🙌✨"""
             else:
-                text = """<b>🚧 Acceso Restringido 🚧</b>
+                text = """*🚧 Acceso Restringido 🚧*
 
-<b>Hola {mention} 👋🏼!</b>
+*Hola {mention} 👋🏼!*
 
-Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+Para acceder a estos archivos, debes ser miembro del *CANAL*.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
 
 ¡Gracias por tu apoyo! 🙌✨"""
             await client.send_message(
