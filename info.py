@@ -70,7 +70,7 @@ OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/WayK17X')
 
 # Configuración de Funcionalidades
 AI_SPELL_CHECK = bool(environ.get('AI_SPELL_CHECK', True))
-PM_SEARCH = bool(environ.get('PM_SEARCH', True))
+PM_SEARCH = bool(environ.get('PM_SEARCH', False))
 BUTTON_MODE = bool(environ.get('BUTTON_MODE', True))
 MAX_BTN = bool(environ.get('MAX_BTN', True))
 IS_TUTORIAL = bool(environ.get('IS_TUTORIAL', False))
@@ -104,7 +104,7 @@ TUTORIAL = environ.get('TUTORIAL', '')
 CACHE_TIME = int(environ.get('CACHE_TIME', 1800))
 MAX_B_TN = environ.get("MAX_B_TN", "5")
 PORT = environ.get("PORT", "8080")
-MSG_ALRT = environ.get('MSG_ALRT', 'Únete a NESS Cloud 🗿')
+MSG_ALRT = environ.get('MSG_ALRT', 'Elaina Best Waifu')
 CUSTOM_FILE_CAPTION = environ.get("CUSTOM_FILE_CAPTION", f"{script.CAPTION}")
 BATCH_FILE_CAPTION = environ.get("BATCH_FILE_CAPTION", CUSTOM_FILE_CAPTION)
 IMDB_TEMPLATE = environ.get("IMDB_TEMPLATE", f"{script.IMDB_TEMPLATE_TXT}")
@@ -132,7 +132,7 @@ RENAME_MODE = bool(environ.get('RENAME_MODE', False))
 AUTO_APPROVE_MODE = bool(environ.get('AUTO_APPROVE_MODE', False))
 
 # Reacciones
-REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
+REACTIONS = ["❤️", "😈"]
 
 # Configuración Final de Bases de Datos
 if not MULTIPLE_DATABASE:
