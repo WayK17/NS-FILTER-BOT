@@ -1810,7 +1810,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
         try:
             if settings['max_btn']:
                 btn.append(
-                    [InlineKeyboardButton(text="",callback_data=f"next_{req}_{key}_{offset}")]
+                    [InlineKeyboardButton(text="⫸",callback_data=f"next_{req}_{key}_{offset}")]
                 )
             else:
                 btn.append(
