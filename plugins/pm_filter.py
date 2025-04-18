@@ -140,15 +140,15 @@ async def next_page(bot, query):
                 off_set = offset - 10
             if n_offset == 0:
                 btn.append(
-                    [InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}")]
+                    [InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}")]
                 )
             elif off_set is None:
-                btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
+                btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
             else:
                 btn.append(
                     [
-                        InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
+                        InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
+                        InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
         else:
@@ -160,15 +160,15 @@ async def next_page(bot, query):
                 off_set = offset - int(MAX_B_TN)
             if n_offset == 0:
                 btn.append(
-                    [InlineKeyboardButton("⬅ Atrás",callback_data=f"next_{req}_{key}_{off_set}")]
+                    [InlineKeyboardButton("⫷",callback_data=f"next_{req}_{key}_{off_set}")]
                 )
             elif off_set is None:
-                btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
+                btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
             else:
                 btn.append(
                     [
-                        InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
+                        InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
+                        InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
     except KeyError:
@@ -181,15 +181,15 @@ async def next_page(bot, query):
             off_set = offset - 10
         if n_offset == 0:
             btn.append(
-                [InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}")]
+                [InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}")]
             )
         elif off_set is None:
-            btn.append([InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")])
+            btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
         else:
             btn.append(
                 [
-                    InlineKeyboardButton("⬅ Atrás", callback_data=f"next_{req}_{key}_{off_set}"),
-                    InlineKeyboardButton("➡ Siguiente", callback_data=f"next_{req}_{key}_{n_offset}")
+                    InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
+                    InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
                 ],
             )
     if not settings["button"]:
