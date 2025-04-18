@@ -226,7 +226,7 @@ Mensaje <b>: {}</b>"""
 <a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>"""
 
     IMDB_TEMPLATE_TXT = """
-<b>🔍 Resultado de Búsqueda:</b> <code>{query}</code>
+<b>🔍 Resultado de Búsqueda:</b> <code>{qurey}</code>
 
 <blockquote>
 <b>🎬 IMDB Detalles:</b>
