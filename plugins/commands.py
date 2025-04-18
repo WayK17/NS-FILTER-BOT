@@ -105,12 +105,36 @@ async def start(client, message):
                         btn.append([InlineKeyboardButton("↻ Intentar de Nuevo", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
             if REQUEST_TO_JOIN_MODE == True:
                 if TRY_AGAIN_BTN == True:
-                    text = "**⚠️ Debes ser miembro del CANAL para acceder a estos archivos.**"
+                    text = "<b>🚧 Acceso Restringido 🚧</b>
+
+<b>Hola {mention} 👋🏼!</b>
+
+Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+
+🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+
+¡Gracias por tu apoyo! 🙌✨"
                 else:
                     await db.set_msg_command(message.from_user.id, com=message.command[1])
-                    text = "**⚠️ Debes ser miembro del CANAL para acceder a estos archivos.**"
+                    text = "<b>🚧 Acceso Restringido 🚧</b>
+
+<b>Hola {mention} 👋🏼!</b>
+
+Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+
+🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+
+¡Gracias por tu apoyo! 🙌✨"
             else:
-                text = "**⚠️ Debes ser miembro del CANAL para acceder a estos archivos.**"
+                text = "<b>🚧 Acceso Restringido 🚧</b>
+
+<b>Hola {mention} 👋🏼!</b>
+
+Para acceder a estos archivos, debes ser miembro del <b>CANAL</b>.
+
+🔔 Una vez que te hayas unido, por favor, presiona el botón <b>'Intentar de Nuevo'</b>.
+
+¡Gracias por tu apoyo! 🙌✨"
             await client.send_message(
                 chat_id=message.from_user.id,
                 text=text,
