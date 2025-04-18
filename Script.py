@@ -4,8 +4,9 @@
 
 class script(object):
     START_TXT = """<b><blockquote>Hola {} 👋,</blockquote>
-    
-Soy el Bot de Filtrado Automático más Avanzado y Poderoso. Puedes Usarme en tu Grupo.. </b>"""
+
+Soy un bot de filtrado automático avanzado y poderoso.  
+Puedes usarme en tu grupo.</b>"""
 
     CLONE_START_TXT = """<b><blockquote>Hola {}, mi nombre es <a href=https://t.me/{}>{}</a></blockquote>
     
@@ -156,37 +157,40 @@ Añadido por - {}"""
 ID - <code>{}</code>
 Nombre - {}"""
 
-    ALRT_TXT = """Hᴏʟᴀ {},
-Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
-Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ..."""
+    ALRT_TXT = """<b>Hᴏʟᴀ {}</b>,  
 
-    OLD_ALRT_TXT = """Hᴇʏ {},
-Esᴛás Usᴀɴᴅᴏ Uɴᴏ Dᴇ Mɪs Mᴇɴsᴀɪᴇs Aɴᴛɪɢᴜᴏs, 
-Pᴏʀ Fᴀᴠᴏʀ Eɴᴠíᴀ Lᴀ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Nᴜᴇᴠᴏ."""
+Eѕᴛᴏ ɴᴏ ᴇs ᴛᴜ ѕᴏʟɪᴄɪᴛᴜᴅ ᴅᴇ ᴘᴇʟíᴄᴜʟᴀ.  
+Por favor, solicita la tuya. 😊"""
 
-    CUDNT_FND = """No Pude Encontrar Nada Relacionado Con {}
-¿Querías Decir Alguno De Estos?"""
+    OLD_ALRT_TXT = """<b>Hey {}</b>,  
 
-    I_CUDNT = """<b>Lo Siento, No Se Encontraron Archivos Para Tu Solicitud {} 😕
-  
-Revisa tu ortografía en Google y prueba de nuevo 😃
+Estás usando uno de mis mensajes antiguos.  
+Por favor, envía la solicitud de nuevo. 😊"""
 
-Formato de solicitud de película 👇
+    CUDNT_FND = """<b>❌ No pude encontrar nada relacionado con <code>{}</code>.</b>
 
-Ejemplo : Uncharted o Uncharted 2022 o Uncharted En
+¿Querías decir alguno de estos?"""
 
-Formato de solicitud de series 👇
+    I_CUDNT = """<b>😔 Lo siento, no se encontraron archivos para tu solicitud: <code>{}</code></b>
 
-Ejemplo : Loki S01 o Loki S01E04 o Lucifer S03E24
+Por favor, revisa la ortografía o prueba con diferentes términos.
 
-🚯 No uses ➠ ':(!,./</b>"""
+<b>📽️ Formato para solicitar películas:</b>
+<blockquote><code>Uncharted</code>, <code>Uncharted 2022</code>, <code>Uncharted En</code></blockquote>
 
-    I_CUD_NT = """No pude encontrar ninguna película relacionada con {}.
-Por favor, revisa la ortografía en Google o IMDB..."""
+<b>📺 Formato para solicitar series:</b>
+<blockquote><code>Loki S01</code>, <code>Loki S01E04</code>, <code>Lucifer S03E24</code></blockquote>
 
-    MVE_NT_FND = """Película No Encontrada En La base de datos..."""
+<b>🚫 Por favor, evita usar caracteres especiales como:</b>
+<blockquote><code>:(!,./</code></blockquote>"""
 
-    TOP_ALRT_MSG = """Buscando película en la Base De Datos..."""
+    I_CUD_NT = """<b>🔍 No pude encontrar ninguna película relacionada con <code>{}</code>.</b>
+
+Por favor, revisa la ortografía en Google o IMDB y vuelve a intentarlo."""
+
+    MVE_NT_FND = """⚠️ <b>Película/serie no encontrada en la base de datos.</b>"""
+
+    TOP_ALRT_MSG = """🔎 <b>Buscando película/serie en la base de datos...</b>"""
 
     MELCOW_ENG = """<b>Hola {} 😍, y bienvenido al grupo {} ❤️</b>"""
 
@@ -215,26 +219,31 @@ Nombre <b>: {}</b>
 
 Mensaje <b>: {}</b>"""
 
-    CAPTION = """<b>📂 Nombre del Archivo: {file_name}
+    CAPTION = """<b>📂 Archivo:</b> <code>{file_name}</code>
 
-⚙️ Tamaño: {file_size}</b>"""
+<b>⚙️ Tamaño:</b> <code>{file_size}</code>
+
+<a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>"""
 
     IMDB_TEMPLATE_TXT = """
-<b>🔍 | Resultado de Búsqueda : {qurey}
-🎬 | IMDB Detalles:
+<b>🔍 Resultado de Búsqueda:</b> <code>{query}</code>
+
+<blockquote>
+<b>🎬 IMDB Detalles:</b>
 ━━━━━━━━━━━━━━━━━━━━━━━
-🏷 | <b>Título</b>: <a href={url}>{title}</a>
-🎭 | Géneros: {genres}
-📆 | Año: <a href={url}/releaseinfo>{year}</a>
-🌟 | Calificación: <a href={url}/ratings>{rating}</a> / 10 ⭐
-☀️ | Idioma: <code>{languages}</code>
-📀 | Duración: {runtime} minutos
-📆 | Fecha de lanzamiento: {release_date}
-🎛 | País: <code>{countries}</code>
+<b>🏷 Título:</b> <a href="{url}">{title}</a>
+<b>🎭 Géneros:</b> {genres}
+<b>📆 Año:</b> <a href="{url}/releaseinfo">{year}</a>
+<b>🌟 Calificación:</b> <a href="{url}/ratings">{rating}</a> / 10 ⭐
+<b>☀️ Idioma:</b> <code>{languages}</code>
+<b>📀 Duración:</b> {runtime} minutos
+<b>📅 Fecha de lanzamiento:</b> {release_date}
+<b>🎛 País:</b> <code>{countries}</code>
 ━━━━━━━━━━━━━━━━━━━━━━━
-⏰ Resultado mostrado en: {remaining_seconds} <i>segundos</i> 🔥
-━━━━━━━━━━━━━━━
-📨 | Solicitado Por: {message.from_user.mention} 🐒</b>"""
+<b>⏰ Resultado mostrado en:</b> {remaining_seconds} <i>segundos</i> 🔥
+━━━━━━━━━━━━━━━━━━━━━━━
+📨 <b>Solicitado por:</b> {message.from_user.mention} 🐒
+</blockquote>"""
 
     ALL_FILTERS = """
 <b>Hola {}, estos son mis tres tipos de filtros.</b>"""
