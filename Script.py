@@ -226,24 +226,32 @@ Mensaje <b>: {}</b>"""
 <a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>"""
 
     IMDB_TEMPLATE_TXT = """
-<b>🔎 Resultado de Búsqueda:</b> <code>{qurey}</code>
+✨ <b>¡Información Encontrada!</b> ✨
 
-━━━━━━━━━━━━━━━━━━━━━━━
+---
 
-<b>🎬 Título:</b> <a href="{url}">{title}</a>  
-<b>🎭 Géneros:</b> {genres}  
-<b>📅 Año:</b> <a href="{url}/releaseinfo">{year}</a>  
-<b>⭐ Calificación:</b> <a href="{url}/ratings">{rating}</a> / 10  
-<b>🌐 Idiomas:</b> <code>{languages}</code>  
-<b>⏳ Duración:</b> {runtime} minutos  
-<b>📆 Fecha de Lanzamiento:</b> {release_date}  
-<b>🌍 País:</b> <code>{countries}</code>
+🎬 <b>{title}</b>
+<a href="{url}">🔗 Ver detalles</a>
 
-━━━━━━━━━━━━━━━━━━━━━━━
+---
 
-⏱ <b>Resultado en:</b> {remaining_seconds} <i>segundos</i> 🔥
+📊 <b>Datos Clave</b>
 
-📩 <b>Solicitado por:</b> {message.from_user.mention} 🐒"""
+⭐ Calificación: <b>{rating}</b> / 10 (<a href="{url}/ratings">Votos</a>)
+🎭 Géneros: <i>{genres}</i>
+📅 Año: {year}
+🌐 Idiomas: <code>{languages}</code>
+⏳ Duración: {runtime} min.
+🗓️ Lanzamiento: {release_date}
+🌍 País: {countries}
+
+---
+
+🔎 <i>Búsqueda original: {query}</i>
+
+⏱️ <i>Respuesta en {remaining_seconds} segundos.</i>
+👤 Solicitado por: {message.from_user.mention}
+ """
 
     ALL_FILTERS = """
 <b>Hola {}, estos son mis tres tipos de filtros.</b>"""
