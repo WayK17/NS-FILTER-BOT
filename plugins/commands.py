@@ -105,34 +105,34 @@ async def start(client, message):
                         btn.append([InlineKeyboardButton("↻ Intentar de Nuevo", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
             if REQUEST_TO_JOIN_MODE == True:
                 if TRY_AGAIN_BTN == True:
-                    text = """*🚧 Acceso Restringido 🚧*
+                    text = """**🚧 Acceso Restringido 🚧**
 
-*Hola {mention} 👋🏼!*
+**Hola 👋🏼!**
 
-Para acceder a estos archivos, debes ser miembro del *CANAL*.
+Para acceder a estos archivos, debes ser miembro del **CANAL**.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
+🔔 Una vez que te hayas unido, por favor, presiona el botón **'Intentar de Nuevo'**.
 
 ¡Gracias por tu apoyo! 🙌✨"""
                 else:
                     await db.set_msg_command(message.from_user.id, com=message.command[1])
-                    text = """*🚧 Acceso Restringido 🚧*
+                    text = """**🚧 Acceso Restringido 🚧**
 
-*Hola {mention} 👋🏼!*
+**Hola 👋🏼!**
 
-Para acceder a estos archivos, debes ser miembro del *CANAL*.
+Para acceder a estos archivos, debes ser miembro del **CANAL**.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
+🔔 Una vez que te hayas unido, por favor, presiona el botón **'Intentar de Nuevo'**.
 
 ¡Gracias por tu apoyo! 🙌✨"""
             else:
-                text = """*🚧 Acceso Restringido 🚧*
+                text = """**🚧 Acceso Restringido 🚧**
 
-*Hola {mention} 👋🏼!*
+**Hola 👋🏼!**
 
-Para acceder a estos archivos, debes ser miembro del *CANAL*.
+Para acceder a estos archivos, debes ser miembro del **CANAL**.
 
-🔔 Una vez que te hayas unido, por favor, presiona el botón *'Intentar de Nuevo'*.
+🔔 Una vez que te hayas unido, por favor, presiona el botón **'Intentar de Nuevo'**.
 
 ¡Gracias por tu apoyo! 🙌✨"""
             await client.send_message(
