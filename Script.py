@@ -247,7 +247,7 @@ Mensaje <b>: {}</b>"""
 
 ---
 
-🔎 <i>Búsqueda original: {query}</i>
+🔎 <i>Búsqueda original: {qurey}</i>
 
 ⏱️ <i>Respuesta en {remaining_seconds} segundos.</i>
 👤 Solicitado por: {message.from_user.mention}
