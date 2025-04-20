@@ -63,8 +63,7 @@ async def start(client, message):
             ],[
                 InlineKeyboardButton('Únete a Nuestro Canal', url=CHNL_LNK)
             ]]
-        if CLONE_MODE == True:
-            buttons.append([InlineKeyboardButton('ᴄʀᴇᴀᴛᴇ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', callback_data='clone')])
+        
         reply_markup = InlineKeyboardMarkup(buttons)
         m=await message.reply_sticker("CAACAgEAAxkBAAIPDGgC3maQG28qq8v1294Ozi3dAfHVAAJTAgACVeuARTjJ-H5bzQn2HgQ") 
         await asyncio.sleep(1)
