@@ -2,8 +2,6 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-# Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
-
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
 from pathlib import Path
 
@@ -18,11 +16,11 @@ from database.users_chats_db import db
 from info import *
 from utils import temp
 from typing import Union, Optional, AsyncGenerator
-from Script import script 
-from datetime import date, datetime 
+from Script import script
+from datetime import date, datetime
 from aiohttp import web
 from plugins import web_server
-from plugins.clone import restart_bots
+# La línea 'from plugins.clone import restart_bots' ha sido eliminada.
 
 from TechVJ.bot import TechVJBot
 from TechVJ.util.keepalive import ping_server
@@ -80,10 +78,7 @@ async def start():
         await k.delete()
     except:
         print("Haz que tu Bot sea administrador forzando la suscripción al canal con todos los derechos.")
-    if CLONE_MODE == True:
-        print("Restarting All Clone Bots.......")
-        await restart_bots()
-        print("Restarted All Clone Bots.")
+    # El bloque 'if CLONE_MODE == True:' y su contenido han sido eliminados.
     app = web.AppRunner(await web_server())
     await app.setup()
     bind_address = "0.0.0.0"
@@ -96,4 +91,3 @@ if __name__ == '__main__':
         loop.run_until_complete(start())
     except KeyboardInterrupt:
         logging.info('Service Stopped Bye 👋')
-
