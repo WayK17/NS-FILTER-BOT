@@ -12,7 +12,7 @@ id_pattern = re.compile(r'^.\d+$')
 SESSION = environ.get('SESSION', 'TechVJBot')
 API_ID = int(environ.get('API_ID', '15353803'))
 API_HASH = environ.get('API_HASH', '0dc88c619c52613806822fd600eec006')
-BOT_TOKEN = environ.get('BOT_TOKEN', "7757301708:AAHSy5O2w-o4RLVb0CAQW_aUHK6fDtjTyFU")
+BOT_TOKEN = environ.get('BOT_TOKEN', "7757301708:AAFXTxEZHfDm0SDRJ6XiKNPSzp4CFEpiBhk")
 
 # Imágenes para el mensaje de inicio
 PICS = (environ.get('PICS', 'https://envs.sh/bu7.jpg')).split()
@@ -95,7 +95,7 @@ VERIFY_SND_SHORTLINK_URL = environ.get('VERIFY_SND_SHORTLINK_URL', '')
 VERIFY_SND_SHORTLINK_API = environ.get('VERIFY_SND_SHORTLINK_API', '')
 
 # Acortador de Enlaces
-SHORTLINK_MODE = bool(environ.get('SHORTLINK_MODE', True))
+SHORTLINK_MODE = bool(environ.get('SHORTLINK_MODE', False))
 SHORTLINK_URL = environ.get('SHORTLINK_URL', 'gplinks.com')
 SHORTLINK_API = environ.get('SHORTLINK_API', 'f74fd0b3750fa5972bd0c659c6426bd189f093c8')
 TUTORIAL = environ.get('TUTORIAL', '')
