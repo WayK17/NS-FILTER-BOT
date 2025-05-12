@@ -4,12 +4,15 @@
 
 import os, logging, string, asyncio, time, re, ast, random, math, pytz, pyrogram
 from datetime import datetime, timedelta, date, time
+# Necesitarás traducir las variables en Script.py
 from Script import script
+# Asegúrate de que estas variables globales estén en info.py o config.py
 from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, ChatPermissions, WebAppInfo
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
+# Asegúrate de que estas funciones y la DB estén disponibles y actualizadas
 from utils import get_size, is_subscribed, pub_is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap
 from database.users_chats_db import db
 from database.ia_filterdb import col, sec_col, db as vjdb, sec_db, get_file_details, get_search_results, get_bad_files
@@ -17,2448 +20,1805 @@ from database.filters_mdb import del_all, find_filter, get_filters
 from database.connections_mdb import mydb, active_connection, all_connections, delete_connection, if_active, make_active, make_inactive
 from database.gfilters_mdb import find_gfilter, get_gfilters, del_allg
 from urllib.parse import quote_plus
+# Asegúrate de que estas funciones existen
 from TechVJ.util.file_properties import get_name, get_hash, get_media_file_size
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 lock = asyncio.Lock()
 
-BUTTON = {}
-BUTTONS = {}
-FRESH = {}
-BUTTONS0 = {}
-BUTTONS1 = {}
-BUTTONS2 = {}
-SPELL_CHECK = {}
+# --- Diccionarios para estado temporal ---
+BUTTON = {} # Parece no usarse, considerar eliminar si es cierto
+BUTTONS = {} # Parece no usarse, considerar eliminar si es cierto
+FRESH = {} # Almacena la búsqueda actual por mensaje
+BUTTONS0 = {} # Relacionado con spell check/send_fsall? - Revisar uso
+BUTTONS1 = {} # Relacionado con spell check/send_fsall? - Revisar uso
+BUTTONS2 = {} # Relacionado con spell check/send_fsall? - Revisar uso
+SPELL_CHECK = {} # Almacena sugerencias de corrección ortográfica
+
+MSG_ALRT = "Comando procesado ✅" # Mensaje genérico para query.answer
 
 @Client.on_message(filters.group & filters.text & filters.incoming)
 async def give_filter(client, message):
-    if message.chat.id != SUPPORT_CHAT_ID:
-        settings = await get_settings(message.chat.id)
-        chatid = message.chat.id 
-        user_id = message.from_user.id if message.from_user else 0
-        if settings['fsub'] != None:
-            try:
-                btn = await pub_is_subscribed(client, message, settings['fsub'])
-                if btn:
-                    btn.append([InlineKeyboardButton("Unmute Me 🔕", callback_data=f"unmuteme#{int(user_id)}")])
-                    await client.restrict_chat_member(chatid, message.from_user.id, ChatPermissions(can_send_messages=False))
-                    await message.reply_photo(photo=random.choice(PICS), caption=f"👋 Hola {message.from_user.mention},\n\nPor favor, únete al canal y luego haz clic en el botón de Unmute 😇", reply_markup=InlineKeyboardMarkup(btn), parse_mode=enums.ParseMode.HTML)
-                    return
-            except Exception as e:
-                print(e)
-
-        manual = await manual_filters(client, message)
-        if manual == False:
-            settings = await get_settings(message.chat.id)
-            try:
-                if settings['auto_ffilter']:
-                    ai_search = True
-                    reply_msg = await message.reply_text(f"<b><i>Buscando {message.text} 🔍</i></b>")
-                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-            except KeyError:
-                grpid = await active_connection(str(message.from_user.id))
-                await save_group_settings(grpid, 'auto_ffilter', True)
-                settings = await get_settings(message.chat.id)
-                if settings['auto_ffilter']:
-                    ai_search = True
-                    reply_msg = await message.reply_text(f"<b><i>Buscando {message.text} 🔍</i></b>")
-                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-    else: #a better logic to avoid repeated lines of code in auto_filter function
+    # Evitar procesar en el grupo de soporte si está definido
+    if SUPPORT_CHAT_ID and message.chat.id == SUPPORT_CHAT_ID:
+        # Respuesta específica para el grupo de soporte
         search = message.text
         temp_files, temp_offset, total_results = await get_search_results(chat_id=message.chat.id, query=search.lower(), offset=0, filter=True)
         if total_results == 0:
             return
         else:
-            return await message.reply_text(f"<b>Hola {message.from_user.mention}, se encontraron {str(total_results)} resultados en mi base de datos para tu búsqueda {search}. \n\nEste es un grupo de soporte, así que no puedes obtener archivos desde aquí...\n\nÚnete y busca aquí - {GRP_LNK}</b>")
+            # Usar variables de info.py para enlaces
+            grp_link = GRP_LNK or "tu grupo principal"
+            return await message.reply_text(f"Hola {message.from_user.mention}, encontré {str(total_results)} resultados para '{search}'.\n\nEste es un grupo de soporte, no se entregan archivos aquí.\n\nBusca en {grp_link}")
+
+    # --- Force Subscribe (Implementación con Mute en Grupo) ---
+    settings = await get_settings(message.chat.id)
+    chatid = message.chat.id
+    user_id = message.from_user.id if message.from_user else 0
+
+    # Verificar si Force Subscribe está habilitado para este grupo
+    fsub_channel_id = settings.get('fsub')
+    if fsub_channel_id:
+        try:
+            # pub_is_subscribed debería devolver los botones si no está suscrito, None si sí lo está
+            btn = await pub_is_subscribed(client, message, fsub_channel_id)
+            if btn:
+                # Botón para desmutearse (llama al callback 'unmuteme')
+                btn.append([InlineKeyboardButton("✅ Ya me uní, desmutearme", callback_data=f"unmuteme#{int(user_id)}")])
+                # Restringir al usuario (mutear)
+                await client.restrict_chat_member(chatid, user_id, ChatPermissions(can_send_messages=False))
+                await message.reply_photo(
+                    photo=random.choice(PICS), # Usar PICS de info.py
+                    caption=f"👋 Hola {message.from_user.mention},\n\nPara poder hablar aquí, únete a nuestro canal y luego presiona el botón de abajo.",
+                    reply_markup=InlineKeyboardMarkup(btn),
+                    parse_mode=enums.ParseMode.HTML
+                )
+                return # Detener procesamiento si está muteado
+        except Exception as e:
+            print(f"Error en Force Subscribe para chat {chatid}, usuario {user_id}: {e}")
+            # Considerar enviar un mensaje al admin si falla constantemente
+
+    # --- Procesamiento de Filtros ---
+    # 1. Filtros Manuales (por grupo)
+    manual = await manual_filters(client, message)
+    if manual: # Si un filtro manual coincidió, ya se envió respuesta
+        return
+
+    # 2. Filtros Globales (si los manuales no coincidieron)
+    # Implementación de filtros globales (si existe la función global_filters y la DB gfilters_mdb)
+    # Nota: La función global_filters no estaba definida en el código original, asumiendo que existe
+    # if GFILTER_ENABLED: # Añadir una variable global para habilitar/deshabilitar filtros globales
+    #     global_f = await global_filters(client, message)
+    #     if global_f:
+    #         return
+
+    # 3. Filtro Automático (si no hubo coincidencias manuales/globales y está activado)
+    try:
+        if settings.get('auto_ffilter', AUTO_FILTER_ENABLED_BY_DEFAULT): # Usar valor de config si no está en settings
+            ai_search = True # ¿Es necesaria esta variable?
+            reply_msg = await message.reply_text(f"Buscando '<i>{message.text}</i>'...", parse_mode=enums.ParseMode.HTML)
+            await auto_filter(client, message.text, message, reply_msg, ai_search)
+    except Exception as e:
+        print(f"Error en Auto Filter para chat {chatid}: {e}")
+        # Podríamos intentar guardar el setting por defecto si falla por KeyError
+        # grpid = await active_connection(str(message.from_user.id)) if message.from_user else message.chat.id
+        # await save_group_settings(grpid, 'auto_ffilter', AUTO_FILTER_ENABLED_BY_DEFAULT)
+        # reintentar auto_filter... (cuidado con bucles infinitos)
+
 
 @Client.on_message(filters.private & filters.text & filters.incoming)
 async def pm_text(bot, message):
     content = message.text
     user = message.from_user.first_name
     user_id = message.from_user.id
-    if content.startswith("/") or content.startswith("#"): return  # ignore commands and hashtags
-    if PM_SEARCH == True:
-        ai_search = True
-        reply_msg = await bot.send_message(message.from_user.id, f"<b><i> {content} 🔍</i></b>", reply_to_message_id=message.id)
-        await auto_filter(bot, content, message, reply_msg, ai_search)
+
+    # Ignorar comandos y hashtags
+    if content.startswith("/") or content.startswith("#"):
+        return
+
+    # Verificar si la búsqueda en PM está habilitada globalmente
+    if not PM_SEARCH:
+         # await message.reply_text("La búsqueda por mensaje privado está desactivada.") # Opcional: informar al usuario
+         return
+
+    # Proceder con la búsqueda automática en PM
+    ai_search = True # ¿Necesario?
+    # Usar reply para mantener el contexto
+    reply_msg = await message.reply_text(f"Buscando '<i>{content}</i>'...", parse_mode=enums.ParseMode.HTML)
+    await auto_filter(bot, content, message, reply_msg, ai_search)
 
 @Client.on_callback_query(filters.regex(r"^next"))
 async def next_page(bot, query):
-    ident, req, key, offset = query.data.split("_")
-    curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-    if int(req) not in [query.from_user.id, 0]:
-        return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
+    ident, req, key, offset_str = query.data.split("_")
+    req_user_id = int(req)
     try:
-        offset = int(offset)
+        offset = int(offset_str)
     except:
         offset = 0
-    search = FRESH.get(key)
-   # if not search:
-      #  await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name),show_alert=True)
-       # return
 
+    # Verificar que el usuario que hace clic es el que inició la búsqueda
+    if req_user_id != query.from_user.id and req_user_id != 0: # 0 para búsquedas globales? revisar
+        return await query.answer(f"❌ ¡Ups! Estos botones son para {query.from_user.first_name}.", show_alert=True)
+
+    # Obtener la búsqueda original guardada
+    search = FRESH.get(key)
+    if not search:
+        await query.answer("⚠️ Esta búsqueda ha expirado o es muy antigua. Por favor, realiza la búsqueda de nuevo.", show_alert=True)
+        # Considerar borrar el mensaje si la búsqueda expiró
+        # await query.message.delete()
+        return
+
+    # Obtener resultados de la base de datos
     files, n_offset, total = await get_search_results(query.message.chat.id, search, offset=offset, filter=True)
-    try:
-        n_offset = int(n_offset)
-    except:
-        n_offset = 0
 
     if not files:
-        return
+        return await query.answer("No hay más resultados en esta página.", show_alert=True)
+
+    # Guardar temporalmente los archivos de esta página (¿para 'Enviar Todo'?)
     temp.GETALL[key] = files
-    temp.SHORT[query.from_user.id] = query.message.chat.id
+    # Guardar chat_id para redirigir clics de archivo/enviar todo (revisar si es necesario globalmente)
+    # temp.SHORT[query.from_user.id] = query.message.chat.id
+
     settings = await get_settings(query.message.chat.id)
-    pre = 'filep' if settings['file_secure'] else 'file'
-    if settings['button']:
-        btn = [
-            [
+    # Determinar prefijo para callbacks de archivo ('filep' o 'file')
+    file_cb_prefix = 'filep' if settings.get('file_secure') else 'file'
+    # Determinar si se muestran botones individuales o solo texto/enlaces
+    show_buttons = settings.get('button', True) # Botones por defecto
+    # Determinar máximo de botones por página
+    max_buttons_per_page = 10 if settings.get('max_btn', True) else MAX_B_TN # Usa MAX_B_TN de config
+
+    btn = []
+
+    # Botón Premium "Enviar Todo"
+    # Nota: La verificación real se hace en el callback 'sendfiles'
+    btn.append([
+        InlineKeyboardButton("✨ Enviar Todo (Premium)", callback_data=f"sendfiles#{key}")
+    ])
+
+    # Botones individuales para cada archivo (si show_buttons es True)
+    if show_buttons:
+        for file in files:
+            # Limpiar nombre de archivo para mostrar en botón
+            file_name_display = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.get('file_name', 'archivo').split()))
+            btn.append([
                 InlineKeyboardButton(
-                    text=f"[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}", callback_data=f'{pre}#{file["file_id"]}'
-                ),
-            ]
-            for file in files
-        ]
+                    text=f"[{get_size(file['file_size'])}] {file_name_display}",
+                    callback_data=f'{file_cb_prefix}#{file["file_id"]}'
+                )
+            ])
 
-        # ✅ CÓDIGO CORREGIDO (SOLO BOTÓN "ENVIAR TODO") ✅
+    # Botones de Paginación
+    prev_offset = offset - max_buttons_per_page if offset >= max_buttons_per_page else 0
+    has_prev = offset > 0
+    has_next = n_offset != 0 # n_offset es el offset para la *siguiente* página
 
-        btn.insert(0, [
-            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
-        ])
+    pagination_row = []
+    if has_prev:
+        pagination_row.append(InlineKeyboardButton("⬅️ Anterior", callback_data=f"next_{req_user_id}_{key}_{prev_offset}"))
     else:
-        btn = []
-        btn.insert(0, [
-            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
-        ])
-    try:
-        if settings['max_btn']:
-            if 0 < offset <= 10:
-                off_set = 0
-            elif offset == 0:
-                off_set = None
+        # Añadir un placeholder o nada si no hay anterior
+        pagination_row.append(InlineKeyboardButton(" ", callback_data="noop")) # No operativo
+
+    # Mostrar página actual y total (aproximado)
+    current_page = math.ceil(offset / max_buttons_per_page) + 1
+    total_pages = math.ceil(total / max_buttons_per_page)
+    if total_pages > 0:
+       pagination_row.append(InlineKeyboardButton(f"📄 {current_page}/{total_pages}", callback_data="noop")) # No operativo
+    else:
+       # No mostrar si solo hay una página o total es 0
+       pass
+
+
+    if has_next:
+        pagination_row.append(InlineKeyboardButton("Siguiente ➡️", callback_data=f"next_{req_user_id}_{key}_{n_offset}"))
+    else:
+         # Añadir un placeholder o nada si no hay siguiente
+        pagination_row.append(InlineKeyboardButton(" ", callback_data="noop")) # No operativo
+
+
+    if pagination_row:
+        btn.append(pagination_row)
+
+
+    # --- Generar Caption ---
+    # Usar plantilla si los botones individuales están desactivados
+    if not show_buttons:
+        # Construir el caption con enlaces directos (manejar shortlink aquí si es necesario)
+        is_premium_user = await db.has_premium_access(query.from_user.id)
+        use_shortlink = SHORTLINK_ENABLED and not is_premium_user
+
+        cap = f"Resultados para: <b>{search}</b> (Página {current_page}/{total_pages})\n\n"
+        for file in files:
+            # Construir el enlace /start que será procesado por el bot
+            start_link_payload = f"{file_cb_prefix}_{file['file_id']}"
+            # Aplicar Shortlink si corresponde
+            if use_shortlink and SHORTLINK_URL and SHORTLINK_API:
+                 final_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, f"https://t.me/{temp.U_NAME}?start={start_link_payload}")
             else:
-                off_set = offset - 10
-            if n_offset == 0:
-                btn.append(
-                    [InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}")]
-                )
-            elif off_set is None:
-                btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
-            else:
-                btn.append(
-                    [
-                        InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
-                    ],
-                )
-        else:
-            if 0 < offset <= int(MAX_B_TN):
-                off_set = 0
-            elif offset == 0:
-                off_set = None
-            else:
-                off_set = offset - int(MAX_B_TN)
-            if n_offset == 0:
-                btn.append(
-                    [InlineKeyboardButton("⫷",callback_data=f"next_{req}_{key}_{off_set}")]
-                )
-            elif off_set is None:
-                btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
-            else:
-                btn.append(
-                    [
-                        InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
-                        InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
-                    ],
-                )
-    except KeyError:
-        await save_group_settings(query.message.chat.id, 'max_btn', True)
-        if 0 < offset <= 10:
-            off_set = 0
-        elif offset == 0:
-            off_set = None
-        else:
-            off_set = offset - 10
-        if n_offset == 0:
-            btn.append(
-                [InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}")]
-            )
-        elif off_set is None:
-            btn.append([InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")])
-        else:
-            btn.append(
-                [
-                    InlineKeyboardButton("⫷", callback_data=f"next_{req}_{key}_{off_set}"),
-                    InlineKeyboardButton("⫸", callback_data=f"next_{req}_{key}_{n_offset}")
-                ],
-            )
-    if not settings["button"]:
-        cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-        time_difference = timedelta(hours=cur_time.hour, minutes=cur_time.minute, seconds=(cur_time.second+(cur_time.microsecond/1000000))) - timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=(curr_time.second+(curr_time.microsecond/1000000)))
-        remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
-        cap = await get_cap(settings, remaining_seconds, files, query, total, search)
+                 final_link = f"https://t.me/{temp.U_NAME}?start={start_link_payload}"
+
+            file_name_display = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.get('file_name', 'archivo').split()))
+            cap += f"📁 <a href='{final_link}'>[{get_size(file['file_size'])}] {file_name_display}</a>\n"
+
         try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            await query.message.edit_text(
+                text=cap,
+                reply_markup=InlineKeyboardMarkup(btn),
+                disable_web_page_preview=True, # Importante para que no carguen los t.me
+                parse_mode=enums.ParseMode.HTML
+            )
         except MessageNotModified:
             pass
     else:
+        # Si se usan botones, solo editar el markup (asume que el caption ya existe)
         try:
             await query.edit_message_reply_markup(
                 reply_markup=InlineKeyboardMarkup(btn)
             )
         except MessageNotModified:
             pass
+
     await query.answer()
 
 @Client.on_callback_query(filters.regex(r"^spol"))
 async def advantage_spoll_choker(bot, query):
-    _, user, movie_ = query.data.split('#')
-    movies = SPELL_CHECK.get(query.message.reply_to_message.id)
-  #  if not movies:
-     #   return await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name), show_alert=True)
-    if int(user) != 0 and query.from_user.id != int(user):
-        return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
-    if movie_ == "close_spellcheck":
-        return await query.message.delete()
-    movie = movies[(int(movie_))]
-    movie = re.sub(r"[:\-]", " ", movie)
-    movie = re.sub(r"\s+", " ", movie).strip()
-    await query.answer(script.TOP_ALRT_MSG)
-    gl = await global_filters(bot, query.message, text=movie)
-    if gl == False:
-        k = await manual_filters(bot, query.message, text=movie)
-        if k == False:
-            files, offset, total_results = await get_search_results(query.message.chat.id, movie, offset=0, filter=True)
-            if files:
-                k = (movie, files, offset, total_results)
-                ai_search = True
-                reply_msg = await query.message.edit_text(f"<b><i>Buscando  {movie} 🔍</i></b>")
-                await auto_filter(bot, movie, query, reply_msg, ai_search, k)
-            else:
-                reqstr1 = query.from_user.id if query.from_user else 0
-                reqstr = await bot.get_users(reqstr1)
-                if NO_RESULTS_MSG:
-                    await bot.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, movie)))
-                k = await query.message.edit(script.MVE_NT_FND)
-                await asyncio.sleep(10)
-                await k.delete()
+    _, user, movie_idx_str = query.data.split('#')
+    req_user_id = int(user)
 
+    # Verificar usuario
+    if req_user_id != 0 and query.from_user.id != req_user_id:
+        return await query.answer(f"❌ ¡Oye! Estos botones son para otro usuario.", show_alert=True)
 
+    # Obtener sugerencias guardadas
+    # Usar query.message.reply_to_message.id podría fallar si el mensaje original fue borrado
+    # Es más seguro usar query.message.id si el mensaje con botones es el editado
+    movies = SPELL_CHECK.get(query.message.id) # Usar ID del mensaje actual (el que tiene los botones)
+    if not movies:
+        return await query.answer("⚠️ Esta sugerencia ha expirado o no se encontró. Intenta buscar de nuevo.", show_alert=True)
 
-    if offset != "":
+    # Manejar botón de cierre
+    if movie_idx_str == "close_spellcheck":
+        await query.message.delete()
+        # Limpiar del diccionario para liberar memoria
         try:
-            if settings['max_btn']:
-                btn.append(
-                    [InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="ɴᴇxᴛ ⇛",callback_data=f"next_{req}_{key}_{offset}")]
-                )
-
-            else:
-                btn.append(
-                    [InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/int(MAX_B_TN))}",callback_data="pages"), InlineKeyboardButton(text="ɴᴇxᴛ ⇛",callback_data=f"next_{req}_{key}_{offset}")]
-                )
+            del SPELL_CHECK[query.message.id]
         except KeyError:
-            await save_group_settings(query.message.chat.id, 'max_btn', True)
-            btn.append(
-                [InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="ɴᴇxᴛ ⇛",callback_data=f"next_{req}_{key}_{offset}")]
-            )
-    else:
-        btn.append(
-            [InlineKeyboardButton(text="😶 ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ 😶",callback_data="pages")]
-        )
-    if lang != "homepage":
-        req = query.from_user.id
-        offset = 0
-        btn.append([InlineKeyboardButton(text="↭ ↭ Volver a Inicio ↭ ↭", callback_data=f"next_{req}_{key}_{offset}")])
-
-    if not settings["button"]:
-        cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-        time_difference = timedelta(hours=cur_time.hour, minutes=cur_time.minute, seconds=(cur_time.second+(cur_time.microsecond/1000000))) - timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=(curr_time.second+(curr_time.microsecond/1000000)))
-        remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
-        total_results = len(files)
-        cap = await get_cap(settings, remaining_seconds, files, query, total_results, search)
-        try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
-        except MessageNotModified:
             pass
-    else:
-        try:
-            await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
-        except MessageNotModified:
-            pass
+        return await query.answer("Sugerencias cerradas.")
 
+    try:
+        movie_idx = int(movie_idx_str)
+        if not (0 <= movie_idx < len(movies)):
+            return await query.answer("Índice de película inválido.", show_alert=True)
+        selected_movie = movies[movie_idx]
+    except (ValueError, IndexError):
+        return await query.answer("Error al seleccionar la sugerencia.", show_alert=True)
+
+    # Limpiar nombre de película seleccionado
+    cleaned_movie = re.sub(r"[:\-]", " ", selected_movie)
+    cleaned_movie = re.sub(r"\s+", " ", cleaned_movie).strip()
+
+    await query.answer(f"✅ Buscando '{cleaned_movie}'...")
+
+    # Limpiar diccionario
+    try:
+        del SPELL_CHECK[query.message.id]
+    except KeyError:
+        pass
+
+    # Iniciar búsqueda automática con el término corregido
+    ai_search = True
+    # Editar el mensaje de sugerencias para mostrar que se está buscando
+    reply_msg = await query.message.edit_text(f"Buscando '<i>{cleaned_movie}</i>'...", parse_mode=enums.ParseMode.HTML)
+
+    # Ejecutar auto_filter con el término corregido
+    # Nota: auto_filter necesita `message` original para settings y user info
+    # Si el mensaje original se borró, esto podría fallar.
+    # Se podría pasar `query.message` y adaptar `auto_filter` o buscar el msg original si es posible.
+    # Por ahora, asumimos que `query.message.reply_to_message` es el mensaje del usuario original
+    if query.message.reply_to_message:
+         await auto_filter(bot, cleaned_movie, query.message.reply_to_message, reply_msg, ai_search)
+    else:
+         # Si no hay reply_to_message, intentar usar el mensaje actual, puede faltar info del usuario original
+         # await auto_filter(bot, cleaned_movie, query.message, reply_msg, ai_search)
+         await reply_msg.edit_text("Error: No se pudo encontrar el mensaje original de la búsqueda.")
+
+
+# Handler principal de Callbacks
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
-    if query.data == "close_data":
+
+    # Ignorar callbacks ya procesados (next, spol)
+    if query.data.startswith("next") or query.data.startswith("spol"):
+        # Ya manejados por sus respectivas funciones
+        # Podríamos añadir un query.answer() aquí por si acaso, pero debería ser redundante
+        try:
+            await query.answer()
+        except Exception:
+            pass # Ignorar si ya se respondió
+        return
+
+    # Callback para no hacer nada (placeholders en botones)
+    if query.data == "noop":
+        return await query.answer()
+
+    # Callback para cerrar mensaje
+    elif query.data == "close_data":
         await query.message.delete()
+        try:
+            # Borrar también el mensaje al que responde (si existe)
+            if query.message.reply_to_message:
+                 await query.message.reply_to_message.delete()
+        except Exception as e:
+            logger.warning(f"No se pudo borrar el mensaje reply_to_message: {e}")
+        return await query.answer("Mensaje cerrado.") # Opcional
+
+    # --- Callbacks de Trial / Premium ---
     elif query.data == "get_trail":
+        # Lógica para obtener prueba gratuita (si está implementada en DB)
         user_id = query.from_user.id
-        free_trial_status = await db.get_free_trial_status(user_id)
-        if not free_trial_status:            
-            await db.give_free_trail(user_id)
-            new_text = "**ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ꜰʀᴇᴇ ᴛʀᴀɪʟ ꜰᴏʀ 5 ᴍɪɴᴜᴛᴇs ꜰʀᴏᴍ ɴᴏᴡ 😀\n\nआप अब से 5 मिनट के लिए निःशुल्क ट्रायल का उपयोग कर सकते हैं 😀**"        
-            await query.message.edit_text(text=new_text)
-            return
+        free_trial_status = await db.get_free_trial_status(user_id) # Asume que existe
+        if not free_trial_status:
+            await db.give_free_trail(user_id) # Asume que existe
+            await query.message.edit_text(text="🎉 ¡Prueba gratuita activada! Tienes acceso premium por tiempo limitado. Disfruta.")
         else:
-            new_text= "**🤣 you already used free now no more free trail. please buy subscription here are our 👉 /plans**"
-            await query.message.edit_text(text=new_text)
-            return
+            await query.message.edit_text(text="⚠️ Ya has utilizado tu prueba gratuita. Considera nuestros planes /premium.")
+        return await query.answer(MSG_ALRT)
 
     elif query.data == "buy_premium":
-        btn = [[            
-            InlineKeyboardButton("✅sᴇɴᴅ ʏᴏᴜʀ ᴘᴀʏᴍᴇɴᴛ ʀᴇᴄᴇɪᴘᴛ ʜᴇʀᴇ ✅", url = OWNER_LINK)
-        ]
-            for admin in ADMINS
-        ]
-        btn.append(
-            [InlineKeyboardButton("⚠️ᴄʟᴏsᴇ / ᴅᴇʟᴇᴛᴇ⚠️", callback_data="close_data")]
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.reply_photo(
-            photo=PAYMENT_QR,
-            caption=PAYMENT_TEXT,
-            reply_markup=reply_markup
-        )
-        return 
+         # Mostrar información de pago (QR, texto, enlace a admin)
+         btn = [[InlineKeyboardButton("Contactar Administrador", url=OWNER_LINK)]] # Usar OWNER_LINK de config
+         # Opcionalmente, añadir botón de cerrar
+         btn.append([InlineKeyboardButton("Cerrar", callback_data="close_data")])
+         caption_text = PAYMENT_TEXT or "Contacta al administrador para opciones de pago." # Usar PAYMENT_TEXT de config
+         qr_photo = PAYMENT_QR # Usar PAYMENT_QR de config
+
+         if qr_photo:
+             try:
+                 await query.message.reply_photo(
+                     photo=qr_photo,
+                     caption=caption_text,
+                     reply_markup=InlineKeyboardMarkup(btn)
+                 )
+             except Exception as e:
+                  logger.error(f"Error al enviar QR de pago: {e}")
+                  await query.message.reply_text(caption_text, reply_markup=InlineKeyboardMarkup(btn)) # Fallback a texto
+         else:
+              await query.message.reply_text(caption_text, reply_markup=InlineKeyboardMarkup(btn))
+         return await query.answer("Información de pago mostrada.")
+
+    # --- Callbacks de Filtros (Manual/Global) ---
     elif query.data == "gfiltersdeleteallconfirm":
-        await del_allg(query.message, 'gfilters')
-        await query.answer("Done !")
+        # Verificar permisos de admin global
+        if str(query.from_user.id) not in ADMINS:
+             return await query.answer("❌ Solo los administradores globales pueden hacer esto.", show_alert=True)
+        await del_allg(query.message, 'gfilters') # Asume que del_allg existe y funciona
+        await query.answer("✅ Filtros globales eliminados.", show_alert=True)
+        await query.message.delete() # Borrar mensaje de confirmación
         return
-    elif query.data == "gfiltersdeleteallcancel": 
-        await query.message.reply_to_message.delete()
-        await query.message.delete()
-        await query.answer("Process Cancelled !")
+    elif query.data == "gfiltersdeleteallcancel":
+        await query.message.delete() # Borrar mensaje de confirmación
+        await query.answer("Operación cancelada.")
         return
+
     elif query.data == "delallconfirm":
         userid = query.from_user.id
         chat_type = query.message.chat.type
+        grp_id = None
+        title = None
 
         if chat_type == enums.ChatType.PRIVATE:
-            grpid = await active_connection(str(userid))
-            if grpid is not None:
-                grp_id = grpid
+            # Obtener conexión activa para el usuario en PM
+            grp_id_str = await active_connection(str(userid)) # Asume que existe
+            if grp_id_str:
+                grp_id = int(grp_id_str)
                 try:
-                    chat = await client.get_chat(grpid)
+                    chat = await client.get_chat(grp_id)
                     title = chat.title
-                except:
-                    await query.message.edit_text("Mᴀᴋᴇ sᴜʀᴇ I'ᴍ ᴘʀᴇsᴇɴᴛ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ!!", quote=True)
-                    return await query.answer(MSG_ALRT)
+                except Exception as e:
+                    logger.error(f"Error obteniendo chat {grp_id} para /delall: {e}")
+                    await query.message.edit_text("⚠️ Error al obtener información del grupo conectado. Asegúrate de que sigo en él.")
+                    return await query.answer("Error", show_alert=True)
             else:
-                await query.message.edit_text(
-                    "I'ᴍ ɴᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ ᴛᴏ ᴀɴʏ ɢʀᴏᴜᴘs!\nCʜᴇᴄᴋ /connections ᴏʀ ᴄᴏɴɴᴇᴄᴛ ᴛᴏ ᴀɴʏ ɢʀᴏᴜᴘs",
-                    quote=True
-                )
+                await query.message.edit_text("❌ No estás conectado a ningún grupo. Usa /connect para vincular un grupo.", quote=True)
                 return await query.answer(MSG_ALRT)
 
         elif chat_type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
             grp_id = query.message.chat.id
             title = query.message.chat.title
-
         else:
-            return await query.answer(MSG_ALRT)
+            # No debería ocurrir en teoría
+            return await query.answer("Comando no aplicable aquí.", show_alert=True)
 
-        st = await client.get_chat_member(grp_id, userid)
-        if (st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS):
-            await del_all(query.message, grp_id, title)
+        # Verificar Permisos (Admin del Bot o Admin/Owner del Grupo)
+        is_admin = str(userid) in ADMINS
+        is_chat_admin = False
+        if not is_admin and grp_id:
+            try:
+                member = await client.get_chat_member(grp_id, userid)
+                if member.status in [enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
+                    is_chat_admin = True
+            except Exception as e:
+                 logger.error(f"Error verificando permisos en {grp_id} para {userid}: {e}")
+
+        if is_admin or is_chat_admin:
+             await del_all(query.message, grp_id, title) # Asume que del_all existe
+             await query.answer(f"✅ Filtros eliminados para {title}.", show_alert=True)
         else:
-            await query.answer("Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ʙᴇ Gʀᴏᴜᴘ Oᴡɴᴇʀ ᴏʀ ᴀɴ Aᴜᴛʜ Usᴇʀ ᴛᴏ ᴅᴏ ᴛʜᴀᴛ!", show_alert=True)
+             await query.answer("❌ Necesitas ser Administrador del bot o del grupo para hacer esto.", show_alert=True)
+        return
+
     elif query.data == "delallcancel":
-        userid = query.from_user.id
-        chat_type = query.message.chat.type
+        # Cancelar borrado de filtros, borrar mensaje de confirmación
+        # Verificar permisos básicos para borrar el mensaje de confirmación (evitar abuso)
+        # (Opcional, pero buena práctica)
+        await query.message.delete()
+        try:
+            if query.message.reply_to_message: # Borrar el mensaje original que activó el /delall
+                 await query.message.reply_to_message.delete()
+        except Exception:
+            pass
+        await query.answer("Operación cancelada.")
+        return
 
-        if chat_type == enums.ChatType.PRIVATE:
-            await query.message.reply_to_message.delete()
-            await query.message.delete()
-
-        elif chat_type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
-            grp_id = query.message.chat.id
-            st = await client.get_chat_member(grp_id, userid)
-            if (st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS):
-                await query.message.delete()
-                try:
-                    await query.message.reply_to_message.delete()
-                except:
-                    pass
-            else:
-                await query.answer("Tʜᴀᴛ's ɴᴏᴛ ғᴏʀ ʏᴏᴜ!!", show_alert=True)
-    elif "groupcb" in query.data:
+    # --- Callbacks de Conexiones (PM <-> Grupo) ---
+    elif query.data.startswith("groupcb"):
         await query.answer()
+        try:
+            _, group_id_str, act = query.data.split(":")
+            group_id = int(group_id_str)
+        except ValueError:
+             return await query.message.edit_text("Error: Callback inválido.")
 
-        group_id = query.data.split(":")[1]
+        try:
+            hr = await client.get_chat(group_id)
+            title = hr.title
+        except Exception as e:
+            logger.error(f"Error obteniendo chat {group_id} en groupcb: {e}")
+            # Quizás el bot fue expulsado, eliminar conexión?
+            # await delete_connection(str(query.from_user.id), str(group_id))
+            return await query.message.edit_text(f"⚠️ No se pudo obtener información del grupo ID: {group_id}. Quizás ya no estoy allí.")
 
-        act = query.data.split(":")[2]
-        hr = await client.get_chat(int(group_id))
-        title = hr.title
-        user_id = query.from_user.id
-
-        if act == "":
-            stat = "CONNECT"
-            cb = "connectcb"
-        else:
-            stat = "DISCONNECT"
-            cb = "disconnect"
-
+        # Definir botones de acción para esta conexión
+        stat = "Desconectar" if act else "Conectar"
+        cb = "disconnect" if act else "connectcb"
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(f"{stat}", callback_data=f"{cb}:{group_id}"),
-             InlineKeyboardButton("DELETE", callback_data=f"deletecb:{group_id}")],
-            [InlineKeyboardButton("BACK", callback_data="backcb")]
+             InlineKeyboardButton("Eliminar Conexión", callback_data=f"deletecb:{group_id}")],
+            [InlineKeyboardButton("⬅️ Volver", callback_data="backcb")]
         ])
-
         await query.message.edit_text(
-            f"Gʀᴏᴜᴘ Nᴀᴍᴇ : **{title}**\nGʀᴏᴜᴘ ID : `{group_id}`",
+            f"Grupo: **{title}**\nID: `{group_id}`\nEstado: {'Activa' if act else 'Inactiva'}",
             reply_markup=keyboard,
             parse_mode=enums.ParseMode.MARKDOWN
         )
-        return await query.answer(MSG_ALRT)
-    elif "connectcb" in query.data:
+        return
+
+    elif query.data.startswith("connectcb"):
         await query.answer()
+        try:
+            _, group_id_str = query.data.split(":")
+            group_id = int(group_id_str)
+        except ValueError:
+             return await query.message.edit_text("Error: Callback inválido.")
 
-        group_id = query.data.split(":")[1]
-
-        hr = await client.get_chat(int(group_id))
-
-        title = hr.title
+        try:
+            hr = await client.get_chat(group_id)
+            title = hr.title
+        except Exception as e:
+            logger.error(f"Error obteniendo chat {group_id} en connectcb: {e}")
+            return await query.message.edit_text(f"⚠️ No se pudo obtener información del grupo ID: {group_id}.")
 
         user_id = query.from_user.id
-
-        mkact = await make_active(str(user_id), str(group_id))
+        mkact = await make_active(str(user_id), str(group_id)) # Asume que existe
 
         if mkact:
             await query.message.edit_text(
-                f"Cᴏɴɴᴇᴄᴛᴇᴅ ᴛᴏ **{title}**",
+                f"✅ Conectado exitosamente al grupo **{title}**.",
                 parse_mode=enums.ParseMode.MARKDOWN
             )
         else:
-            await query.message.edit_text('Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!', parse_mode=enums.ParseMode.MARKDOWN)
-        return await query.answer(MSG_ALRT)
-    elif "disconnect" in query.data:
+            # Podría fallar si la conexión ya existe, etc.
+            await query.message.edit_text('⚠️ Ocurrió un error al intentar conectar. ¿Ya estabas conectado?', parse_mode=enums.ParseMode.MARKDOWN)
+        return # No necesita MSG_ALRT si edita el mensaje
+
+    elif query.data.startswith("disconnect"):
         await query.answer()
+        try:
+            _, group_id_str = query.data.split(":")
+            group_id = int(group_id_str) # No se usa realmente para desconectar, pero se recibe
+        except ValueError:
+             return await query.message.edit_text("Error: Callback inválido.")
 
-        group_id = query.data.split(":")[1]
-
-        hr = await client.get_chat(int(group_id))
-
-        title = hr.title
         user_id = query.from_user.id
-
-        mkinact = await make_inactive(str(user_id))
+        mkinact = await make_inactive(str(user_id)) # Asume que existe
 
         if mkinact:
             await query.message.edit_text(
-                f"Dɪsᴄᴏɴɴᴇᴄᴛᴇᴅ ғʀᴏᴍ **{title}**",
+                f"✅ Desconectado de la sesión activa.",
                 parse_mode=enums.ParseMode.MARKDOWN
             )
         else:
             await query.message.edit_text(
-                f"Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!",
+                f"⚠️ Ocurrió un error al desconectar. ¿No tenías ninguna conexión activa?",
                 parse_mode=enums.ParseMode.MARKDOWN
             )
-        return await query.answer(MSG_ALRT)
-    elif "deletecb" in query.data:
+        return
+
+    elif query.data.startswith("deletecb"):
         await query.answer()
+        try:
+            _, group_id_str = query.data.split(":")
+            group_id = int(group_id_str)
+        except ValueError:
+             return await query.message.edit_text("Error: Callback inválido.")
 
         user_id = query.from_user.id
-        group_id = query.data.split(":")[1]
-
-        delcon = await delete_connection(str(user_id), str(group_id))
+        delcon = await delete_connection(str(user_id), str(group_id)) # Asume que existe
 
         if delcon:
             await query.message.edit_text(
-                "Sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ᴄᴏɴɴᴇᴄᴛɪᴏɴ !"
+                "✅ Conexión eliminada exitosamente."
             )
+            # Volver a mostrar la lista de conexiones restantes
+            await show_connections(client, query.message, user_id)
         else:
             await query.message.edit_text(
-                f"Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!",
+                f"⚠️ Ocurrió un error al eliminar la conexión.",
                 parse_mode=enums.ParseMode.MARKDOWN
             )
-        return await query.answer(MSG_ALRT)
+        return
+
     elif query.data == "backcb":
         await query.answer()
-
         userid = query.from_user.id
+        await show_connections(client, query.message, userid) # Función auxiliar para mostrar conexiones
+        return
 
-        groupids = await all_connections(str(userid))
-        if groupids is None:
-            await query.message.edit_text(
-                "Tʜᴇʀᴇ ᴀʀᴇ ɴᴏ ᴀᴄᴛɪᴠᴇ ᴄᴏɴɴᴇᴄᴛɪᴏɴs!! Cᴏɴɴᴇᴄᴛ ᴛᴏ sᴏᴍᴇ ɢʀᴏᴜᴘs ғɪʀsᴛ.",
-            )
-            return await query.answer(MSG_ALRT)
-        buttons = []
-        for groupid in groupids:
-            try:
-                ttl = await client.get_chat(int(groupid))
-                title = ttl.title
-                active = await if_active(str(userid), str(groupid))
-                act = " - ACTIVE" if active else ""
-                buttons.append(
-                    [
-                        InlineKeyboardButton(
-                            text=f"{title}{act}", callback_data=f"groupcb:{groupid}:{act}"
-                        )
-                    ]
-                )
-            except:
-                pass
-        if buttons:
-            await query.message.edit_text(
-                "Yᴏᴜʀ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɢʀᴏᴜᴘ ᴅᴇᴛᴀɪʟs ;\n\n",
-                reply_markup=InlineKeyboardMarkup(buttons)
-            )
-    elif "gfilteralert" in query.data:
-        grp_id = query.message.chat.id
-        i = query.data.split(":")[1]
-        keyword = query.data.split(":")[2]
-        reply_text, btn, alerts, fileid = await find_gfilter('gfilters', keyword)
-        if alerts is not None:
-            alerts = ast.literal_eval(alerts)
-            alert = alerts[int(i)]
-            alert = alert.replace("\\n", "\n").replace("\\t", "\t")
-            await query.answer(alert, show_alert=True)
-
-    elif "alertmessage" in query.data:
-        grp_id = query.message.chat.id
-        i = query.data.split(":")[1]
-        keyword = query.data.split(":")[2]
-        reply_text, btn, alerts, fileid = await find_filter(grp_id, keyword)
-        if alerts is not None:
-            alerts = ast.literal_eval(alerts)
-            alert = alerts[int(i)]
-            alert = alert.replace("\\n", "\n").replace("\\t", "\t")
-            await query.answer(alert, show_alert=True)
-
-    if query.data.startswith("file"):
-        clicked = query.from_user.id
+    # --- Callbacks de Alertas (Filtros Manuales/Globales) ---
+    elif query.data.startswith("gfilteralert") or query.data.startswith("alertmessage"):
         try:
-            typed = query.message.reply_to_message.from_user.id
-        except:
-            typed = query.from_user.id
-        ident, file_id = query.data.split("#")
-        files_ = await get_file_details(file_id)
-        if not files_:
-            return await query.answer('Nᴏ sᴜᴄʜ ғɪʟᴇ ᴇxɪsᴛ.')
-        files = files_
-        title = files["file_name"]
-        size = get_size(files["file_size"])
-        f_caption = files["caption"]
-        settings = await get_settings(query.message.chat.id)
-        if CUSTOM_FILE_CAPTION:
-            try:
-                f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
-                                                       file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption)
-            except Exception as e:
-                logger.exception(e)
-            f_caption = f_caption
-        if f_caption is None:
-            f_caption = f"{files['file_name']}"
+            # Extraer datos del callback
+            parts = query.data.split(":")
+            alert_type = parts[0] # 'gfilteralert' o 'alertmessage'
+            index = int(parts[1])
+            keyword = parts[2]
+            grp_id = query.message.chat.id # El grupo donde se mostró el filtro
 
-        try:
-            if settings['is_shortlink'] and not await db.has_premium_access(query.from_user.id):
-                if clicked == typed:
-                    temp.SHORT[clicked] = query.message.chat.id
-                    await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=short_{file_id}")
-                    return
-                else:
-                    await query.answer(f"""Hᴏʟᴀ {query.from_user.first_name}, Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
-Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ""", show_alert=True)
-            elif settings['is_shortlink'] and await db.has_premium_access(query.from_user.id):
-                if clicked == typed:
-                    await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={ident}_{file_id}")
-                    return
-                else:
-                    await query.answer(f"""Hᴏʟᴀ {query.from_user.first_name}, Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
-Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ""", show_alert=True)
+            # Obtener datos del filtro correspondiente
+            if alert_type == 'gfilteralert':
+                 reply_text, btn, alerts_str, fileid = await find_gfilter('gfilters', keyword)
+            else: # alertmessage
+                 reply_text, btn, alerts_str, fileid = await find_filter(grp_id, keyword)
 
+            # Procesar y mostrar la alerta
+            if alerts_str:
+                 alerts = ast.literal_eval(alerts_str) # Convertir string a lista
+                 if 0 <= index < len(alerts):
+                     alert_text = alerts[index].replace("\\n", "\n").replace("\\t", "\t")
+                     await query.answer(alert_text, show_alert=True)
+                 else:
+                     await query.answer("Índice de alerta inválido.", show_alert=True)
             else:
-                if clicked == typed:
-                    await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={ident}_{file_id}")
-                    return
-                else:
-                    await query.answer(f"""Hᴏʟᴀ {query.from_user.first_name}, Esᴛᴏ Nᴏ Es Tᴜ Sᴏʟɪᴄɪᴛᴜᴅ Dᴇ Pᴇʟíᴄᴜʟᴀ,
-Sᴏʟɪᴄɪᴛᴀ Lᴀ Tᴜʏᴀ""", show_alert=True)
-        except UserIsBlocked:
-            await query.answer('Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ ᴍᴀʜɴ !', show_alert=True)
-        except PeerIdInvalid:
-            await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={ident}_{file_id}")
-        except Exception as e:
-            await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={ident}_{file_id}")
+                 await query.answer("No hay alertas definidas para este filtro.", show_alert=True)
 
+        except (ValueError, IndexError, SyntaxError, TypeError) as e:
+            logger.error(f"Error procesando callback de alerta ({query.data}): {e}")
+            await query.answer("Error al mostrar la alerta.", show_alert=True)
+        return
+
+    # --- Callbacks de Archivos (Clic en botón individual) ---
+    elif query.data.startswith("file") or query.data.startswith("filep"): # file o filep (protegido)
+        clicked_user_id = query.from_user.id
+        original_requester_id = 0
+        # Intentar obtener el ID del usuario que hizo la búsqueda original
+        try:
+            # Asume que el mensaje con botones es una respuesta al mensaje del usuario
+            if query.message.reply_to_message and query.message.reply_to_message.from_user:
+                 original_requester_id = query.message.reply_to_message.from_user.id
+        except Exception:
+            # Si falla, usar el ID del que hizo clic como fallback (menos seguro)
+            original_requester_id = clicked_user_id
+            logger.warning("No se pudo determinar el solicitante original, usando el ID del clicker.")
+
+        # Verificar si el que hace clic es el solicitante original (si PING_MESSAGE está activado)
+        if PING_MESSAGE and clicked_user_id != original_requester_id:
+             return await query.answer(
+                 f"👋 ¡Hola {query.from_user.first_name}! Este botón es para el usuario que hizo la solicitud original. Por favor, haz tu propia búsqueda.",
+                 show_alert=True
+            )
+
+        # Extraer ID del archivo
+        try:
+            ident, file_id = query.data.split("#")
+        except ValueError:
+            return await query.answer("Callback de archivo inválido.", show_alert=True)
+
+        # Obtener detalles del archivo
+        file_details = await get_file_details(file_id)
+        if not file_details:
+            return await query.answer('❌ No se encontró este archivo en la base de datos. Puede haber sido eliminado.', show_alert=True)
+
+        # --- Lógica de Shortlink (Global y Premium) ---
+        is_premium = await db.has_premium_access(clicked_user_id)
+        use_shortlink = SHORTLINK_ENABLED and not is_premium
+
+        # Construir el payload para el enlace /start
+        start_payload = f"{ident}_{file_id}" # ident es 'file' o 'filep'
+
+        # Generar el enlace final (directo o con shortlink)
+        final_url = f"https://t.me/{temp.U_NAME}?start={start_payload}"
+
+        if use_shortlink and SHORTLINK_URL and SHORTLINK_API:
+            try:
+                 shortened_url = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, final_url)
+                 if shortened_url: # Verificar si el acortador funcionó
+                     final_url = shortened_url
+                 else:
+                     logger.warning(f"El acortador falló para {final_url}, usando enlace directo.")
+            except Exception as e:
+                 logger.error(f"Error al acortar enlace {final_url}: {e}")
+                 # Usar enlace directo como fallback
+
+        # Responder al callback con la URL para que Telegram la abra
+        try:
+            await query.answer(url=final_url)
+        except UserIsBlocked:
+            await query.answer('⚠️ ¡Debes desbloquearme para que pueda enviarte el archivo!', show_alert=True)
+        except PeerIdInvalid:
+            # Este error a veces ocurre, intentar de nuevo puede funcionar
+            await query.answer(url=final_url)
+        except Exception as e:
+            logger.error(f"Error inesperado en query.answer(url=...): {e}")
+            # Como último recurso, intentar enviar la URL como mensaje
+            try:
+                 await query.message.reply_text(f"No pude abrir el enlace directamente. Aquí tienes: {final_url}", quote=True)
+            except Exception:
+                 pass # Si incluso enviar mensaje falla
+        return
+
+    # --- Callbacks de "Enviar Todo" (Premium) ---
     elif query.data.startswith("sendfiles"):
-        clicked = query.from_user.id
-        ident, key = query.data.split("#")
-        settings = await get_settings(query.message.chat.id)
-        pre = 'allfilesp' if settings['file_secure'] else 'allfiles'
+        clicked_user_id = query.from_user.id
+        original_requester_id = 0
         try:
-            if settings['is_shortlink'] and not await db.has_premium_access(query.from_user.id):
-                await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=sendfiles1_{key}")
-            elif settings['is_shortlink'] and await db.has_premium_access(query.from_user.id):
-                await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={pre}_{key}")
-                return 
-            else:
-                await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start={pre}_{key}")
+            if query.message.reply_to_message and query.message.reply_to_message.from_user:
+                 original_requester_id = query.message.reply_to_message.from_user.id
+        except Exception:
+            original_requester_id = clicked_user_id
 
+        # Verificar solicitante original si PING_MESSAGE está activo
+        if PING_MESSAGE and clicked_user_id != original_requester_id:
+             return await query.answer(
+                 f"👋 ¡Hola {query.from_user.first_name}! Este botón es para el usuario que hizo la solicitud original.",
+                 show_alert=True
+            )
 
+        # --- VERIFICACIÓN PREMIUM ---
+        is_premium = await db.has_premium_access(clicked_user_id)
+        if not is_premium:
+            # Si NO es premium, mostrar alerta y detener
+            return await query.answer("⭐ ¡Ups! La función 'Enviar Todo' es exclusiva para usuarios Premium.", show_alert=True)
 
+        # Si ES premium, proceder:
+        try:
+            ident, key = query.data.split("#") # ident es 'sendfiles'
+        except ValueError:
+            return await query.answer("Callback 'Enviar Todo' inválido.", show_alert=True)
+
+        # Obtener la clave de búsqueda (si aún existe)
+        search_query = FRESH.get(key)
+        if not search_query:
+            return await query.answer("⚠️ Esta búsqueda ha expirado. Realiza la búsqueda de nuevo.", show_alert=True)
+
+        # Obtener configuración de protección de contenido
+        settings = await get_settings(query.message.chat.id)
+        file_prefix = 'allfilesp' if settings.get('file_secure') else 'allfiles'
+
+        # Construir payload /start (sin shortlink, ya que es premium)
+        start_payload = f"{file_prefix}_{key}" # prefijo + key de búsqueda
+        final_url = f"https://t.me/{temp.U_NAME}?start={start_payload}"
+
+        try:
+            await query.answer(url=final_url)
         except UserIsBlocked:
-            await query.answer('Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ ᴍᴀʜɴ !', show_alert=True)
+            await query.answer('⚠️ ¡Debes desbloquearme para que pueda enviarte los archivos!', show_alert=True)
         except PeerIdInvalid:
-            await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=sendfiles3_{key}")
+            await query.answer(url=final_url)
         except Exception as e:
-            logger.exception(e)
-            await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=sendfiles4_{key}")
+            logger.error(f"Error inesperado en query.answer(url=...) para sendfiles: {e}")
+            try:
+                 await query.message.reply_text(f"No pude abrir el enlace directamente. Aquí tienes: {final_url}", quote=True)
+            except Exception:
+                 pass
+        return
 
+    # --- Callback Force Subscribe (Desmutear) ---
     elif query.data.startswith("unmuteme"):
-        ident, userid = query.data.split("#")
-        user_id = query.from_user.id
-        settings = await get_settings(int(query.message.chat.id))
-        if userid == 0:
-            await query.answer("You are anonymous admin !", show_alert=True)
-            return
-        try:
-            btn = await pub_is_subscribed(client, query, settings['fsub'])
-            if btn:
-                await query.answer("Kindly Join Given Channel Then Click On Unmute Button", show_alert=True)
-            else:
-                await client.unban_chat_member(query.message.chat.id, user_id)
-                await query.answer("Unmuted Successfully !", show_alert=True)
-                try:
-                    await query.message.delete()
-                except:
-                    return
-        except:
-            await query.answer("Not For Your My Dear", show_alert=True)
+        ident, user_id_to_unmute_str = query.data.split("#")
+        user_id_to_unmute = int(user_id_to_unmute_str)
 
-    elif query.data.startswith("del"):
-        ident, file_id = query.data.split("#")
-        files_ = await get_file_details(file_id)
-        if not files_:
-            return await query.answer('Nᴏ sᴜᴄʜ ғɪʟᴇ ᴇxɪsᴛ.')
-        files = files_
-        title = files['file_name']
-        size = get_size(files['file_size'])
-        f_caption = files['caption']
+        # Verificar que el usuario que hace clic es el que debe ser desmuteado
+        if query.from_user.id != user_id_to_unmute:
+            return await query.answer("❌ Este botón no es para ti.", show_alert=True)
+
+        # Obtener canal de suscripción forzada desde settings del grupo
         settings = await get_settings(query.message.chat.id)
-        if CUSTOM_FILE_CAPTION:
-            try:
-                f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
-                                                       file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption)
-            except Exception as e:
-                logger.exception(e)
-            f_caption = f_caption
-        if f_caption is None:
-            f_caption = f"{files['file_name']}"
-        await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=file_{file_id}")
+        fsub_channel_id = settings.get('fsub')
 
-    elif query.data.startswith("checksub"):
-        if AUTH_CHANNEL and not await is_subscribed(client, query):
-            await query.answer("Jᴏɪɴ ᴏᴜʀ Bᴀᴄᴋ-ᴜᴘ ᴄʜᴀɴɴᴇʟ ᴍᴀʜɴ! 😒", show_alert=True)
-            return
-        ident, kk, file_id = query.data.split("#")
-        await query.answer(url=f"https://t.me/{temp.U_NAME}?start={kk}_{file_id}")
+        if not fsub_channel_id:
+             # Si FS está desactivado, igual intentar desmutear por si acaso quedó muteado antes
+             try:
+                  await client.unban_chat_member(query.message.chat.id, user_id_to_unmute)
+                  await query.answer("✅ ¡Listo! Ya puedes hablar.", show_alert=True)
+                  await query.message.delete() # Borrar mensaje de "unirse"
+             except Exception as e:
+                  logger.error(f"Error al desmutear (FS desactivado) a {user_id_to_unmute} en {query.message.chat.id}: {e}")
+                  await query.answer("Ocurrió un error al intentar desmutearte.", show_alert=True)
+             return
 
-    elif query.data == "pages":
-        await query.answer()
-
-    elif query.data.startswith("send_fsall"):
-        temp_var, ident, key, offset = query.data.split("#")
-        search = BUTTON0.get(key)
-     #   if not search:
-      #      await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name),show_alert=True)
-      #      return
-        files, n_offset, total = await get_search_results(query.message.chat.id, search, offset=int(offset), filter=True)
-        await send_all(client, query.from_user.id, files, ident, query.message.chat.id, query.from_user.first_name, query)
-        search = BUTTONS1.get(key)
-        files, n_offset, total = await get_search_results(query.message.chat.id, search, offset=int(offset), filter=True)
-        await send_all(client, query.from_user.id, files, ident, query.message.chat.id, query.from_user.first_name, query)
-        search = BUTTONS2.get(key)
-        files, n_offset, total = await get_search_results(query.message.chat.id, search, offset=int(offset), filter=True)
-        await send_all(client, query.from_user.id, files, ident, query.message.chat.id, query.from_user.first_name, query)
-        await query.answer(f"Hey {query.from_user.first_name}, All files on this page has been sent successfully to your PM !", show_alert=True)
-
-    elif query.data.startswith("send_fall"):
-        temp_var, ident, key, offset = query.data.split("#")
-        search = FRESH.get(key)
-     #   if not search:
-       #     await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name),show_alert=True)
-      #      return
-        files, n_offset, total = await get_search_results(query.message.chat.id, search, offset=int(offset), filter=True)
-        await send_all(client, query.from_user.id, files, ident, query.message.chat.id, query.from_user.first_name, query)
-        await query.answer(f"Hey {query.from_user.first_name}, All files on this page has been sent successfully to your PM !", show_alert=True)
-
-    elif query.data.startswith("killfilesdq"):
-        ident, keyword = query.data.split("#")
-        #await query.message.edit_text(f"<b>Fetching Files for your query {keyword} on DB... Please wait...</b>")
-        files, total = await get_bad_files(keyword)
-        await query.message.edit_text("<b>File deletion process will start in 5 seconds !</b>")
-        await asyncio.sleep(5)
-        deleted = 0
-        async with lock:
-            try:
-                for file in files:
-                    file_ids = file["file_id"]
-                    file_name = file["file_name"]
-                    result = col.delete_one({
-                        'file_id': file_ids,
-                    })
-                    if not result.deleted_count:
-                        result = sec_col.delete_one({
-                            'file_id': file_ids,
-                        })
-                    if result.deleted_count:
-                        logger.info(f'File Found for your query {keyword}! Successfully deleted {file_name} from database.')
-                    deleted += 1
-                    if deleted % 50 == 0:
-                        await query.message.edit_text(f"<b>Process started for deleting files from DB. Successfully deleted {str(deleted)} files from DB for your query {keyword} !\n\nPlease wait...</b>")
-            except Exception as e:
-                logger.exception(e)
-                await query.message.edit_text(f'Error: {e}')
-            else:
-                await query.message.edit_text(f"<b>Process Completed for file deletion !\n\nSuccessfully deleted {str(deleted)} files from database for your query {keyword}.</b>")
-
-    elif query.data.startswith("opnsetgrp"):
-        ident, grp_id = query.data.split("#")
-        userid = query.from_user.id if query.from_user else None
-        st = await client.get_chat_member(grp_id, userid)
-        if (
-                st.status != enums.ChatMemberStatus.ADMINISTRATOR
-                and st.status != enums.ChatMemberStatus.OWNER
-                and str(userid) not in ADMINS
-        ):
-            await query.answer("No Tienes Los Derechos Para Hacer Esto.", show_alert=True)
-            return
-        title = query.message.chat.title
-        settings = await get_settings(grp_id)
-        if settings is not None:
-            buttons = [
-                [
-                    InlineKeyboardButton('Rᴇsᴜʟᴛ Pᴀɢᴇ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('Bᴜᴛᴛᴏɴ' if settings["button"] else 'Tᴇxᴛ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["file_secure"] else '✘ Oғғ',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Iᴍᴅʙ', callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["imdb"] else '✘ Oғғ',
-                                         callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Sᴘᴇʟʟ Cʜᴇᴄᴋ',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["spell_check"] else '✘ Oғғ',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Wᴇʟᴄᴏᴍᴇ Msɢ', callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["welcome"] else '✘ Oғғ',
-                                         callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Aᴜᴛᴏ-Dᴇʟᴇᴛᴇ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('5 Mɪɴs' if settings["auto_delete"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Aᴜᴛᴏ-Fɪʟᴛᴇʀ',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["auto_ffilter"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Mᴀx Bᴜᴛᴛᴏɴs',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('SʜᴏʀᴛLɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["is_shortlink"] else '✘ Oғғ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await query.message.edit_text(
-                text=f"<b>Cʜᴀɴɢᴇ Yᴏᴜʀ Sᴇᴛᴛɪɴɢs Fᴏʀ {title} As Yᴏᴜʀ Wɪsʜ ⚙</b>",
-                disable_web_page_preview=True,
-                parse_mode=enums.ParseMode.HTML
-            )
-            await query.message.edit_reply_markup(reply_markup)
-
-    elif query.data.startswith("opnsetpm"):
-        ident, grp_id = query.data.split("#")
-        userid = query.from_user.id if query.from_user else None
-        st = await client.get_chat_member(grp_id, userid)
-        if (
-                st.status != enums.ChatMemberStatus.ADMINISTRATOR
-                and st.status != enums.ChatMemberStatus.OWNER
-                and str(userid) not in ADMINS
-        ):
-            await query.answer("No Tienes Los Derechos Para Hacer Esto.", show_alert=True)
-            return
-        title = query.message.chat.title
-        settings = await get_settings(grp_id)
-        btn2 = [[
-                 InlineKeyboardButton("Cʜᴇᴄᴋ PM", url=f"telegram.me/{temp.U_NAME}")
-               ]]
-        reply_markup = InlineKeyboardMarkup(btn2)
-        await query.message.edit_text(f"<b>Tu Menú De Configuración Para {title} Ha Sido Enviado A Tus Mensajes Privados</b>")
-        await query.message.edit_reply_markup(reply_markup)
-        if settings is not None:
-            buttons = [
-                [
-                    InlineKeyboardButton('Rᴇsᴜʟᴛ Pᴀɢᴇ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('Button' if settings["button"] else 'Tᴇxᴛ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Contenido Protejido',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["file_secure"] else '✘ Oғғ',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('IMDB', callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["imdb"] else '✘ Oғғ',
-                                         callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Revisión Ortográfica',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["spell_check"] else '✘ Oғғ',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Welcome Msg', callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["welcome"] else '✘ Oғғ',
-                                         callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Aᴜᴛᴏ-Dᴇʟᴇᴛᴇ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('5 Mɪɴs' if settings["auto_delete"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Auto-Filter',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["auto_ffilter"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Mᴀx Bᴜᴛᴛᴏɴs',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('SʜᴏʀᴛLɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["is_shortlink"] else '✘ Oғғ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await client.send_message(
-                chat_id=userid,
-                text=f"<b>Cambia Tus Configuraciones Para {title} Como Tu Desees ⚙</b>",
-                reply_markup=reply_markup,
-                disable_web_page_preview=True,
-                parse_mode=enums.ParseMode.HTML,
-                reply_to_message_id=query.message.id
-            )
-
-    elif query.data.startswith("show_option"):
-        ident, from_user = query.data.split("#")
-        btn = [[
-                InlineKeyboardButton("Uɴᴀᴠᴀɪʟᴀʙʟᴇ", callback_data=f"unavailable#{from_user}"),
-                InlineKeyboardButton("Uᴘʟᴏᴀᴅᴇᴅ", callback_data=f"uploaded#{from_user}")
-             ],[
-                InlineKeyboardButton("Aʟʀᴇᴀᴅʏ Aᴠᴀɪʟᴀʙʟᴇ", callback_data=f"already_available#{from_user}")
-              ]]
-        btn2 = [[
-                 InlineKeyboardButton("Vɪᴇᴡ Sᴛᴀᴛᴜs", url=f"{query.message.link}")
-               ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Hᴇʀᴇ ᴀʀᴇ ᴛʜᴇ ᴏᴘᴛɪᴏɴs !")
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢʜᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("unavailable"):
-        ident, from_user = query.data.split("#")
-        btn = [[
-                InlineKeyboardButton("⚠️ Uɴᴀᴠᴀɪʟᴀʙʟᴇ ⚠️", callback_data=f"unalert#{from_user}")
-              ]]
-        btn2 = [[
-                 InlineKeyboardButton('Jᴏɪɴ Cʜᴀɴɴᴇʟ', url=link.invite_link),
-                 InlineKeyboardButton("Vɪᴇᴡ Sᴛᴀᴛᴜs", url=f"{query.message.link}")
-               ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            content = query.message.text
-            await query.message.edit_text(f"<b><strike>{content}</strike></b>")
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Sᴇᴛ ᴛᴏ Uɴᴀᴠᴀɪʟᴀʙʟᴇ !")
-            try:
-                await client.send_message(chat_id=int(from_user), text=f"<b>Hᴇʏ {user.mention}, Sᴏʀʀʏ Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ɪs ᴜɴᴀᴠᴀɪʟᴀʙʟᴇ. Sᴏ ᴏᴜʀ ᴍᴏᴅᴇʀᴀᴛᴏʀs ᴄᴀɴ'ᴛ ᴜᴘʟᴏᴀᴅ ɪᴛ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-            except UserIsBlocked:
-                await client.send_message(chat_id=int(SUPPORT_CHAT_ID), text=f"<b>Hᴇʏ {user.mention}, Sᴏʀʀʏ Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ɪs ᴜɴᴀᴠᴀɪʟᴀʙʟᴇ. Sᴏ ᴏᴜʀ ᴍᴏᴅᴇʀᴀᴛᴏʀs ᴄᴀɴ'ᴛ ᴜᴘʟᴏᴀᴅ ɪᴛ.\n\nNᴏᴛᴇ: Tʜɪs ᴍᴇssᴀɢᴇ ɪs sᴇɴᴛ ᴛᴏ ᴛʜɪs ɢʀᴏᴜᴘ ʙᴇᴄᴀᴜsᴇ ʏᴏᴜ'ᴠᴇ ʙʟᴏᴄᴋᴇᴅ ᴛʜᴇ ʙᴏᴛ. Tᴏ sᴇɴᴅ ᴛʜɪs ᴍᴇssᴀɢᴇ ᴛᴏ ʏᴏᴜʀ PM, Mᴜsᴛ ᴜɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢʜᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("uploaded"):
-        ident, from_user = query.data.split("#")
-        btn = [[
-                InlineKeyboardButton("✅ Cargado ✅", callback_data=f"upalert#{from_user}")
-              ]]
-        btn2 = [[
-                 InlineKeyboardButton('Unirse a Canal', url=link.invite_link),
-                 InlineKeyboardButton("View Status", url=f"{query.message.link}")
-               ],[
-                 InlineKeyboardButton("Solicitar Enlace De Grupo", url="https://t.me/+KzbVzahVdqQ3MmM1")
-               ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            content = query.message.text
-            await query.message.edit_text(f"<b><strike>{content}</strike></b>")
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Sᴇᴛ ᴛᴏ Uᴘʟᴏᴀᴅᴇᴅ !")
-            try:
-                await client.send_message(chat_id=int(from_user), text=f"<b>Hᴇʏ {user.mention}, Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ʜᴀs ʙᴇᴇɴ ᴜᴘʟᴏᴀᴅᴇᴅ ʙʏ ᴏᴜʀ ᴍᴏᴅᴇʀᴀᴛᴏʀs. Kɪɴᴅʟʏ sᴇᴀʀᴄʜ ɪɴ ᴏᴜʀ Gʀᴏᴜᴘ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-            except UserIsBlocked:
-                await client.send_message(chat_id=int(SUPPORT_CHAT_ID), text=f"<b>Hᴇʏ {user.mention}, Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ʜᴀs ʙᴇᴇɴ ᴜᴘʟᴏᴀᴅᴇᴅ ʙʏ ᴏᴜʀ ᴍᴏᴅᴇʀᴀᴛᴏʀs. Kɪɴᴅʟʏ sᴇᴀʀᴄʜ ɪɴ ᴏᴜʀ Gʀᴏᴜᴘ.\n\nNᴏᴛᴇ: Tʜɪs ᴍᴇssᴀɢᴇ ɪs sᴇɴᴛ ᴛᴏ ᴛʜɪs ɢʀᴏᴜᴘ ʙᴇᴄᴀᴜsᴇ ʏᴏᴜ'ᴠᴇ ʙʟᴏᴄᴋᴇᴅ ᴛʜᴇ ʙᴏᴛ. Tᴏ sᴇɴᴅ ᴛʜɪs ᴍᴇssᴀɢᴇ ᴛᴏ ʏᴏᴜʀ PM, Mᴜsᴛ ᴜɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("already_available"):
-        ident, from_user = query.data.split("#")
-        btn = [[
-            InlineKeyboardButton("🟢 Aʟʀᴇᴀᴅʏ Aᴠᴀɪʟᴀʙʟᴇ 🟢", callback_data=f"alalert#{from_user}")
-        ]]
-        btn2 = [[
-            InlineKeyboardButton('Jᴏɪɴ Cʜᴀɴɴᴇʟ', url=link.invite_link),
-            InlineKeyboardButton("Vɪᴇᴡ Sᴛᴀᴛᴜs", url=f"{query.message.link}")
-        ],[
-            InlineKeyboardButton("Rᴇᴏ̨ᴜᴇsᴛ Gʀᴏᴜᴘ Lɪɴᴋ", url="https://t.me/vj_bots")
-        ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            content = query.message.text
-            await query.message.edit_text(f"<b><strike>{content}</strike></b>")
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Sᴇᴛ ᴛᴏ Aʟʀᴇᴀᴅʏ Aᴠᴀɪʟᴀʙʟᴇ !")
-            try:
-                await client.send_message(chat_id=int(from_user), text=f"<b>Hᴇʏ {user.mention}, Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ɪs ᴀʟʀᴇᴀᴅʏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴏɴ ᴏᴜʀ ʙᴏᴛ's ᴅᴀᴛᴀʙᴀsᴇ. Kɪɴᴅʟʏ sᴇᴀʀᴄʜ ɪɴ ᴏᴜʀ Gʀᴏᴜᴘ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-            except UserIsBlocked:
-                await client.send_message(chat_id=int(SUPPORT_CHAT_ID), text=f"<b>Hᴇʏ {user.mention}, Yᴏᴜʀ ʀᴇᴏ̨ᴜᴇsᴛ ɪs ᴀʟʀᴇᴀᴅʏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴏɴ ᴏᴜʀ ʙᴏᴛ's ᴅᴀᴛᴀʙᴀsᴇ. Kɪɴᴅʟʏ sᴇᴀʀᴄʜ ɪɴ ᴏᴜʀ Gʀᴏᴜᴘ.\n\nNᴏᴛᴇ: Tʜɪs ᴍᴇssᴀɢᴇ ɪs sᴇɴᴛ ᴛᴏ ᴛʜɪs ɢʀᴏᴜᴘ ʙᴇᴄᴀᴜsᴇ ʏᴏᴜ'ᴠᴇ ʙʟᴏᴄᴋᴇᴅ ᴛʜᴇ ʙᴏᴛ. Tᴏ sᴇɴᴅ ᴛʜɪs ᴍᴇssᴀɢᴇ ᴛᴏ ʏᴏᴜʀ PM, Mᴜsᴛ ᴜɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ.</b>", reply_markup=InlineKeyboardMarkup(btn2))
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("alalert"):
-        ident, from_user = query.data.split("#")
-        if int(query.from_user.id) == int(from_user):
-            user = await client.get_users(from_user)
-            await query.answer(f"Hᴇʏ {user.first_name}, Yᴏᴜʀ Rᴇᴏ̨ᴜᴇsᴛ ɪs Aʟʀᴇᴀᴅʏ Aᴠᴀɪʟᴀʙʟᴇ !", show_alert=True)
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("upalert"):
-        ident, from_user = query.data.split("#")
-        if int(query.from_user.id) == int(from_user):
-            user = await client.get_users(from_user)
-            await query.answer(f"Hᴇʏ {user.first_name}, Yᴏᴜʀ Rᴇᴏ̨ᴜᴇsᴛ ɪs Uᴘʟᴏᴀᴅᴇᴅ !", show_alert=True)
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("unalert"):
-        ident, from_user = query.data.split("#")
-        if int(query.from_user.id) == int(from_user):
-            user = await client.get_users(from_user)
-            await query.answer(f"Hᴇʏ {user.first_name}, Yᴏᴜʀ Rᴇᴏ̨ᴜᴇsᴛ ɪs Uɴᴀᴠᴀɪʟᴀʙʟᴇ !", show_alert=True)
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("generate_stream_link"):
-        _, file_id = query.data.split(":")
+        # Verificar si ahora SÍ está suscrito
         try:
-            log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
-            fileName = {quote_plus(get_name(log_msg))}
-            stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-            download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-            button = [[
-                InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
-                InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
-            ],[
-                InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
-            ]]
-            await query.message.edit_reply_markup(InlineKeyboardMarkup(button))
+            # pub_is_subscribed debe devolver None si está suscrito
+            btns = await pub_is_subscribed(client, query, fsub_channel_id)
+            if btns: # Si devuelve botones, significa que AÚN NO se ha unido
+                await query.answer("🤔 Parece que todavía no te has unido al canal. Por favor, únete y vuelve a intentarlo.", show_alert=True)
+            else: # Si devuelve None, SÍ se ha unido
+                await client.unban_chat_member(query.message.chat.id, user_id_to_unmute) # unban = unmute
+                await query.answer("✅ ¡Genial! Gracias por unirte. Ya puedes hablar.", show_alert=True)
+                await query.message.delete() # Borrar mensaje de "unirse"
         except Exception as e:
-            print(e)
-            await query.answer(f"something went wrong\n\n{e}", show_alert=True)
-            return
+            logger.error(f"Error verificando suscripción/desmuteando a {user_id_to_unmute} en {query.message.chat.id}: {e}")
+            await query.answer("Ocurrió un error al verificar tu suscripción o desmutearte.", show_alert=True)
+        return
 
-    elif query.data == "reqinfo":
-        await query.answer(text=script.REQINFO, show_alert=True)
+    # --- Callback para eliminar archivos defectuosos (Admin) ---
+    elif query.data.startswith("killfilesdq"):
+         # Verificar si es admin del bot
+         if str(query.from_user.id) not in ADMINS:
+              return await query.answer("❌ Comando solo para administradores.", show_alert=True)
 
-    elif query.data == "select":
-        await query.answer(text=script.SELECT, show_alert=True)
+         try:
+             ident, keyword = query.data.split("#")
+         except ValueError:
+              return await query.answer("Callback inválido.", show_alert=True)
 
-    elif query.data == "sinfo":
-        await query.answer(text=script.SINFO, show_alert=True)
+         await query.message.edit_text(f"Buscando archivos para eliminar con el término: '{keyword}'...")
+         files_to_delete, total_found = await get_bad_files(keyword) # Asume que existe
 
+         if not files_to_delete:
+              return await query.message.edit_text(f"No se encontraron archivos para eliminar con '{keyword}'.")
+
+         await query.message.edit_text(f"Se encontraron {total_found} archivos para '{keyword}'.\nIniciando proceso de borrado en 5 segundos...")
+         await asyncio.sleep(5)
+
+         deleted_count = 0
+         errors_count = 0
+         async with lock: # Usar lock si hay riesgo de concurrencia
+             try:
+                 for file_doc in files_to_delete:
+                     file_id_to_delete = file_doc.get("file_id")
+                     file_name = file_doc.get("file_name", "N/A")
+                     if not file_id_to_delete:
+                         errors_count += 1
+                         continue
+
+                     # Intentar borrar de la colección principal
+                     result1 = await col.delete_one({'file_id': file_id_to_delete})
+                     # Si no se borró de la principal, intentar en la secundaria
+                     result2 = None
+                     if result1.deleted_count == 0 and sec_col: # Verificar si sec_col existe
+                           result2 = await sec_col.delete_one({'file_id': file_id_to_delete})
+
+                     if result1.deleted_count > 0 or (result2 and result2.deleted_count > 0):
+                         deleted_count += 1
+                         logger.info(f"Admin {query.from_user.id} eliminó archivo {file_id_to_delete} ({file_name}) usando keyword '{keyword}'.")
+                     else:
+                         logger.warning(f"No se pudo eliminar el archivo {file_id_to_delete} ({file_name}) con keyword '{keyword}'. ¿Ya estaba borrado?")
+                         errors_count +=1 # Contar como error si no se borró de ninguna
+
+                     # Actualizar estado cada 50 eliminaciones
+                     if deleted_count > 0 and deleted_count % 50 == 0:
+                          await query.message.edit_text(f"Borrando archivos para '{keyword}'...\nEliminados: {deleted_count}\nErrores: {errors_count}\nTotal encontrados: {total_found}\n\nPor favor espera...")
+
+             except Exception as e:
+                 logger.exception(f"Error durante la eliminación masiva con keyword '{keyword}': {e}")
+                 await query.message.edit_text(f'Error durante el proceso: {e}')
+             else:
+                 await query.message.edit_text(f"✅ Proceso de borrado completado para '{keyword}'.\n\nEliminados exitosamente: {deleted_count}\nNo encontrados/Errores: {errors_count}\nTotal encontrados inicialmente: {total_found}")
+         return
+
+    # --- Callbacks de Configuración (/settings) ---
+    elif query.data.startswith(("opnsetgrp", "opnsetpm")): # Abrir menú settings
+         # Verificar permisos (Admin Bot o Admin Grupo)
+         is_admin = str(query.from_user.id) in ADMINS
+         is_chat_admin = False
+         try:
+             # Extraer group_id del callback
+             ident, grp_id_str = query.data.split("#")
+             grp_id = int(grp_id_str)
+             # Verificar admin del chat si no es admin del bot
+             if not is_admin:
+                  member = await client.get_chat_member(grp_id, query.from_user.id)
+                  if member.status in [enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
+                       is_chat_admin = True
+         except (ValueError, IndexError, Exception) as e:
+             logger.error(f"Error procesando opnset* callback o verificando permisos: {e}")
+             return await query.answer("Error al abrir configuración o verificar permisos.", show_alert=True)
+
+         if not (is_admin or is_chat_admin):
+              return await query.answer("❌ No tienes permisos para cambiar la configuración de este grupo.", show_alert=True)
+
+         # Obtener settings actuales
+         settings = await get_settings(grp_id)
+         if settings is None:
+              # Inicializar settings si no existen? O mostrar error?
+              # await save_group_settings(grp_id, default_settings) # Necesitaría default_settings
+              # settings = await get_settings(grp_id)
+              # O mostrar error:
+              logger.error(f"No se encontraron settings para el grupo {grp_id}")
+              return await query.answer("Error: No se encontró la configuración de este grupo.", show_alert=True)
+
+         # Construir botones del menú de configuración
+         # Quitado: Shortlink (is_shortlink) - ahora es global
+         buttons = [
+             [
+                 InlineKeyboardButton('Formato Resultados', callback_data=f'setgs#button#{settings.get("button", True)}#{grp_id}'),
+                 InlineKeyboardButton('Botones' if settings.get("button", True) else 'Texto', callback_data=f'setgs#button#{settings.get("button", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Contenido Protegido', callback_data=f'setgs#file_secure#{settings.get("file_secure", False)}#{grp_id}'),
+                 InlineKeyboardButton('🔒 Sí' if settings.get("file_secure", False) else '🔓 No', callback_data=f'setgs#file_secure#{settings.get("file_secure", False)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Mostrar Info IMDb', callback_data=f'setgs#imdb#{settings.get("imdb", True)}#{grp_id}'),
+                 InlineKeyboardButton('🎬 Sí' if settings.get("imdb", True) else '🚫 No', callback_data=f'setgs#imdb#{settings.get("imdb", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Corrector Ortográfico', callback_data=f'setgs#spell_check#{settings.get("spell_check", True)}#{grp_id}'),
+                 InlineKeyboardButton('✍️ Sí' if settings.get("spell_check", True) else '🚫 No', callback_data=f'setgs#spell_check#{settings.get("spell_check", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Mensaje Bienvenida', callback_data=f'setgs#welcome#{settings.get("welcome", True)}#{grp_id}'),
+                 InlineKeyboardButton('👋 Sí' if settings.get("welcome", True) else '🚫 No', callback_data=f'setgs#welcome#{settings.get("welcome", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Auto-Borrado (Resultados)', callback_data=f'setgs#auto_delete#{settings.get("auto_delete", False)}#{grp_id}'),
+                 InlineKeyboardButton(f'🗑️ {AUTO_DELETE_SECONDS // 60} min' if settings.get("auto_delete", False) else '🚫 No', callback_data=f'setgs#auto_delete#{settings.get("auto_delete", False)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Auto-Filtro (al buscar)', callback_data=f'setgs#auto_ffilter#{settings.get("auto_ffilter", True)}#{grp_id}'),
+                 InlineKeyboardButton('🔍 Sí' if settings.get("auto_ffilter", True) else '🚫 No', callback_data=f'setgs#auto_ffilter#{settings.get("auto_ffilter", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Max Botones (Paginación)', callback_data=f'setgs#max_btn#{settings.get("max_btn", True)}#{grp_id}'),
+                 InlineKeyboardButton('🔟 (10)' if settings.get("max_btn", True) else f'{MAX_B_TN}', callback_data=f'setgs#max_btn#{settings.get("max_btn", True)}#{grp_id}')
+             ],
+             [ # Botón para cerrar el menú de settings
+                 InlineKeyboardButton("✅ Cerrar Configuración", callback_data="close_data")
+             ]
+         ]
+         reply_markup = InlineKeyboardMarkup(buttons)
+         chat_title = query.message.chat.title if query.message.chat else f"Grupo ID {grp_id}"
+
+         # Decidir dónde mostrar el menú
+         if ident == "opnsetgrp": # Mostrar en el grupo
+             await query.message.edit_text(
+                 text=f"⚙️ Configuración para <b>{chat_title}</b>:",
+                 reply_markup=reply_markup,
+                 parse_mode=enums.ParseMode.HTML
+             )
+         else: # opnsetpm - Enviar a PM
+             try:
+                 await client.send_message(
+                     chat_id=query.from_user.id,
+                     text=f"⚙️ Configuración para <b>{chat_title}</b>:",
+                     reply_markup=reply_markup,
+                     parse_mode=enums.ParseMode.HTML,
+                     # reply_to_message_id=query.message.id # Puede fallar si el mensaje original en grupo se borra
+                 )
+                 # Confirmar en el grupo que se envió a PM
+                 await query.message.edit_text(
+                     f"✅ El menú de configuración para <b>{chat_title}</b> ha sido enviado a tus mensajes privados.",
+                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Abrir PM", url=f"tg://user?id={query.from_user.id}")]])
+                 )
+             except UserIsBlocked:
+                 await query.answer("⚠️ No puedo enviarte el menú porque me has bloqueado.", show_alert=True)
+             except Exception as e:
+                  logger.error(f"Error enviando settings a PM {query.from_user.id}: {e}")
+                  await query.answer("Ocurrió un error al enviar la configuración a tu PM.", show_alert=True)
+         return await query.answer(MSG_ALRT) # Answer al callback original
+
+    elif query.data.startswith("setgs"): # Cambiar un setting específico
+         # Verificar permisos (Admin Bot o Admin Grupo) - ¡IMPORTANTE!
+         try:
+             ident, set_type, status_str, grp_id_str = query.data.split("#")
+             grp_id = int(grp_id_str)
+             current_status = status_str == "True" # Estado actual antes del cambio
+             new_status = not current_status # El nuevo estado a guardar
+         except (ValueError, IndexError):
+              return await query.answer("Callback de configuración inválido.", show_alert=True)
+
+         # Re-verificar permisos antes de cambiar nada
+         is_admin = str(query.from_user.id) in ADMINS
+         is_chat_admin = False
+         if not is_admin:
+              try:
+                   member = await client.get_chat_member(grp_id, query.from_user.id)
+                   if member.status in [enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
+                        is_chat_admin = True
+              except Exception:
+                   pass # Falló la verificación
+
+         if not (is_admin or is_chat_admin):
+              return await query.answer("❌ No tienes permisos para cambiar esta configuración.", show_alert=True)
+
+         # Verificar conexión activa (si se edita desde PM)
+         if query.message.chat.type == enums.ChatType.PRIVATE:
+              active_grp_id = await active_connection(str(query.from_user.id))
+              if str(grp_id) != active_grp_id:
+                   await query.message.edit_text("⚠️ Tu conexión activa ha cambiado. Por favor, ve a /connections y selecciona el grupo correcto antes de cambiar su configuración.")
+                   return await query.answer("Conexión cambiada", show_alert=True)
+
+         # Guardar el nuevo setting
+         await save_group_settings(grp_id, set_type, new_status) # Asume que existe y funciona
+
+         # Refrescar el menú de settings con el valor actualizado
+         settings = await get_settings(grp_id)
+         if settings is None: # Fallback por si acaso
+             return await query.answer("Error al recargar la configuración.", show_alert=True)
+
+         # Reconstruir botones (similar a opnsetgrp/opnsetpm)
+         # Quitado: Shortlink (is_shortlink)
+         buttons = [
+             [
+                 InlineKeyboardButton('Formato Resultados', callback_data=f'setgs#button#{settings.get("button", True)}#{grp_id}'),
+                 InlineKeyboardButton('Botones' if settings.get("button", True) else 'Texto', callback_data=f'setgs#button#{settings.get("button", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Contenido Protegido', callback_data=f'setgs#file_secure#{settings.get("file_secure", False)}#{grp_id}'),
+                 InlineKeyboardButton('🔒 Sí' if settings.get("file_secure", False) else '🔓 No', callback_data=f'setgs#file_secure#{settings.get("file_secure", False)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Mostrar Info IMDb', callback_data=f'setgs#imdb#{settings.get("imdb", True)}#{grp_id}'),
+                 InlineKeyboardButton('🎬 Sí' if settings.get("imdb", True) else '🚫 No', callback_data=f'setgs#imdb#{settings.get("imdb", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Corrector Ortográfico', callback_data=f'setgs#spell_check#{settings.get("spell_check", True)}#{grp_id}'),
+                 InlineKeyboardButton('✍️ Sí' if settings.get("spell_check", True) else '🚫 No', callback_data=f'setgs#spell_check#{settings.get("spell_check", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Mensaje Bienvenida', callback_data=f'setgs#welcome#{settings.get("welcome", True)}#{grp_id}'),
+                 InlineKeyboardButton('👋 Sí' if settings.get("welcome", True) else '🚫 No', callback_data=f'setgs#welcome#{settings.get("welcome", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Auto-Borrado (Resultados)', callback_data=f'setgs#auto_delete#{settings.get("auto_delete", False)}#{grp_id}'),
+                 InlineKeyboardButton(f'🗑️ {AUTO_DELETE_SECONDS // 60} min' if settings.get("auto_delete", False) else '🚫 No', callback_data=f'setgs#auto_delete#{settings.get("auto_delete", False)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Auto-Filtro (al buscar)', callback_data=f'setgs#auto_ffilter#{settings.get("auto_ffilter", True)}#{grp_id}'),
+                 InlineKeyboardButton('🔍 Sí' if settings.get("auto_ffilter", True) else '🚫 No', callback_data=f'setgs#auto_ffilter#{settings.get("auto_ffilter", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton('Max Botones (Paginación)', callback_data=f'setgs#max_btn#{settings.get("max_btn", True)}#{grp_id}'),
+                 InlineKeyboardButton('🔟 (10)' if settings.get("max_btn", True) else f'{MAX_B_TN}', callback_data=f'setgs#max_btn#{settings.get("max_btn", True)}#{grp_id}')
+             ],
+             [
+                 InlineKeyboardButton("✅ Cerrar Configuración", callback_data="close_data")
+             ]
+         ]
+         reply_markup = InlineKeyboardMarkup(buttons)
+
+         try:
+             # Editar el mensaje actual con los botones actualizados
+             await query.edit_message_reply_markup(reply_markup)
+             await query.answer(f"✅ {set_type} {'activado' if new_status else 'desactivado'}")
+         except MessageNotModified:
+             await query.answer(f"{set_type} ya estaba {'activado' if new_status else 'desactivado'}")
+         except Exception as e:
+             logger.error(f"Error al editar markup en setgs: {e}")
+             await query.answer("Error al actualizar la interfaz.", show_alert=True)
+         return
+
+    # --- Callbacks Menú Principal y Ayuda (/start, /help) ---
+    # Se han eliminado callbacks de funciones no deseadas (ytdl, song, etc.)
     elif query.data == "start":
-        if PREMIUM_AND_REFERAL_MODE == True:
-            buttons = [[
-                InlineKeyboardButton('⤬ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ⤬', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
-            ],[
-                InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ', callback_data="shortlink_info"),
-                InlineKeyboardButton('ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ', url=GRP_LNK)
-            ],[
-                InlineKeyboardButton('ʜᴇʟᴘ', callback_data='help'),
-                InlineKeyboardButton('ᴀʙᴏᴜᴛ', callback_data='about')
-            ],[
-                InlineKeyboardButton('ᴘʀᴇᴍɪᴜᴍ ᴀɴᴅ ʀᴇғᴇʀʀᴀʟ', callback_data='subscription')
-            ],[
-                InlineKeyboardButton('ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=CHNL_LNK)
-            ]]
-        else:
-            buttons = [[
-                InlineKeyboardButton('⤬ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ⤬', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
-            ],[
-                InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ', callback_data="shortlink_info"),
-                InlineKeyboardButton('ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ', url=GRP_LNK)
-            ],[
-                InlineKeyboardButton('ʜᴇʟᴘ', callback_data='help'),
-                InlineKeyboardButton('ᴀʙᴏᴜᴛ', callback_data='about')
-            ],[
-                InlineKeyboardButton('ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=CHNL_LNK)
-            ]]
-        if CLONE_MODE == True:
-            buttons.append([InlineKeyboardButton('ᴄʀᴇᴀᴛᴇ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', callback_data='clone')])
+        buttons = [[
+            InlineKeyboardButton('➕ Añádeme a tu Grupo ➕', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
+        ],[
+            InlineKeyboardButton('🫂 Grupo Principal', url=GRP_LNK), # Usar GRP_LNK de config
+            InlineKeyboardButton('📣 Canal Updates', url=CHNL_LNK) # Usar CHNL_LNK de config
+        ],[
+            InlineKeyboardButton('❓ Ayuda', callback_data='help'),
+            InlineKeyboardButton('ℹ️ Acerca de', callback_data='about')
+        ]]
+        # Añadir botón premium/referral si está activado
+        if PREMIUM_AND_REFERAL_MODE:
+             buttons.append([InlineKeyboardButton('⭐ Premium / Referidos', callback_data='subscription')])
+
         reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+        # Usar InputMediaPhoto para evitar errores si PICS está vacío o tiene errores
+        try:
+            await client.edit_message_media(
+                query.message.chat.id,
+                query.message.id,
+                InputMediaPhoto(random.choice(PICS) if PICS else "https://via.placeholder.com/600x300.png?text=Bot+Activo") # Fallback image
+            )
+        except Exception as e:
+            logger.warning(f"Error al cambiar media en /start: {e}. Ignorando cambio de media.")
+
+        # Texto de inicio desde Script.py (necesita traducción)
+        start_text = script.START_TXT.format(mention=query.from_user.mention, bot_name=temp.B_NAME, bot_username=temp.U_NAME)
         await query.message.edit_text(
-            text=script.START_TXT.format(query.from_user.mention, temp.U_NAME, temp.B_NAME),
+            text=start_text,
             reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.HTML,
+            disable_web_page_preview=True
         )
         await query.answer(MSG_ALRT)
 
-    elif query.data == "clone":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='start')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.CLONE_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-
-    elif query.data == "filters":
-        buttons = [[
-            InlineKeyboardButton('Mᴀɴᴜᴀʟ FIʟᴛᴇʀ', callback_data='manuelfilter'),
-            InlineKeyboardButton('Aᴜᴛᴏ FIʟᴛᴇʀ', callback_data='autofilter')
-        ],[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help'),
-            InlineKeyboardButton('Gʟᴏʙᴀʟ Fɪʟᴛᴇʀs', callback_data='global_filters')
-        ]]
-
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        await query.message.edit_text(
-            text=script.ALL_FILTERS.format(query.from_user.mention),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-
-    elif query.data == "global_filters":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='filters')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.GFILTER_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-
     elif query.data == "help":
+        # Botones de Ayuda (Simplificados)
         buttons = [[
-             InlineKeyboardButton('⚙️ ᴀᴅᴍɪɴ ᴏɴʟʏ 🔧', callback_data='admin'),
-         ], [ 
-             InlineKeyboardButton('ʀᴇɴᴀᴍᴇ', callback_data='r_txt'),   
-             InlineKeyboardButton('sᴛʀᴇᴀᴍ/ᴅᴏᴡɴʟᴏᴀᴅ', callback_data='s_txt') 
-         ], [ 
-             InlineKeyboardButton('ꜰɪʟᴇ ꜱᴛᴏʀᴇ', callback_data='store_file'),   
-             InlineKeyboardButton('ᴛᴇʟᴇɢʀᴀᴘʜ', callback_data='tele') 
-         ], [ 
-             InlineKeyboardButton('ᴄᴏɴɴᴇᴄᴛɪᴏɴꜱ', callback_data='coct'), 
-             InlineKeyboardButton('ꜰɪʟᴛᴇʀꜱ', callback_data='filters')
-         ], [
-             InlineKeyboardButton('ʏᴛ-ᴅʟ', callback_data='ytdl'), 
-             InlineKeyboardButton('ꜱʜᴀʀᴇ ᴛᴇxᴛ', callback_data='share')
-         ], [
-             InlineKeyboardButton('ꜱᴏɴɢ', callback_data='song'),
-             InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ', callback_data='shortlink_info')
-         ], [
-             InlineKeyboardButton('ꜱᴛɪᴄᴋᴇʀ-ɪᴅ', callback_data='sticker'),
-             InlineKeyboardButton('ᴊ-ꜱᴏɴ', callback_data='json')
-         ], [             
-             InlineKeyboardButton('🏠 𝙷𝙾𝙼𝙴 🏠', callback_data='start')
+             InlineKeyboardButton('👮 Comandos Admin', callback_data='admin'),
+             InlineKeyboardButton('👤 Comandos Usuario', callback_data='user_cmds')
+         ],[
+             InlineKeyboardButton('⚙️ Conexiones PM-Grupo', callback_data='coct'),
+             InlineKeyboardButton('💾 Filtros Manuales', callback_data='filters')
+         ],[
+             InlineKeyboardButton('🆔 Obtener ID Sticker', callback_data='sticker'),
+             InlineKeyboardButton('⭐ Premium / Referidos', callback_data='subscription') # Si aplica
+         ],[
+             InlineKeyboardButton('🏠 Inicio', callback_data='start')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+        # Usar InputMediaPhoto
+        try:
+            await client.edit_message_media(
+                query.message.chat.id,
+                query.message.id,
+                InputMediaPhoto(random.choice(PICS) if PICS else "https://via.placeholder.com/600x300.png?text=Ayuda") # Fallback
+            )
+        except Exception as e:
+             logger.warning(f"Error al cambiar media en /help: {e}. Ignorando.")
+
+        # Texto de ayuda desde Script.py (necesita traducción)
+        help_text = script.HELP_TXT.format(mention=query.from_user.mention)
         await query.message.edit_text(
-            text=script.HELP_TXT.format(query.from_user.mention),
+            text=help_text,
             reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            parse_mode=enums.ParseMode.HTML,
+            disable_web_page_preview=True
         )
+        await query.answer(MSG_ALRT)
+
     elif query.data == "about":
-        buttons = [[
-            InlineKeyboardButton('Sᴜᴘᴘᴏʀᴛ Gʀᴏᴜᴘ', url=GRP_LNK),
-            InlineKeyboardButton('Sᴏᴜʀᴄᴇ Cᴏᴅᴇ', url="https://github.com/VJBots/VJ-FILTER-BOT")
-        ],[
-            InlineKeyboardButton('Hᴏᴍᴇ', callback_data='start'),
-            InlineKeyboardButton('Cʟᴏsᴇ', callback_data='close_data')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.ABOUT_TXT.format(temp.U_NAME, temp.B_NAME, OWNER_LNK),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
+         buttons = [[
+            InlineKeyboardButton('🫂 Grupo Soporte', url=GRP_LNK), # Usar GRP_LNK de config
+            InlineKeyboardButton('📣 Canal Updates', url=CHNL_LNK) # Usar CHNL_LNK de config
+         ],[
+             InlineKeyboardButton(' Dᴏɴᴀʀ', url=DONATE_LINK), # Puedes definirlo en config.py
+             InlineKeyboardButton('🧑‍💻 Dueño', url=OWNER_LINK) # Usar OWNER_LINK de config
+         ],[
+             InlineKeyboardButton('🏠 Inicio', callback_data='start'),
+             InlineKeyboardButton('Cerrar', callback_data='close_data')
+         ]]
+         reply_markup = InlineKeyboardMarkup(buttons)
+         try:
+             await client.edit_message_media(
+                 query.message.chat.id,
+                 query.message.id,
+                 InputMediaPhoto(random.choice(PICS) if PICS else "https://via.placeholder.com/600x300.png?text=Acerca+De") # Fallback
+             )
+         except Exception as e:
+             logger.warning(f"Error al cambiar media en /about: {e}. Ignorando.")
+         # Texto About desde Script.py (necesita traducción)
+         about_text = script.ABOUT_TXT.format(bot_name=temp.B_NAME, bot_username=temp.U_NAME, owner_link=OWNER_LNK)
+         await query.message.edit_text(
+             text=about_text,
+             reply_markup=reply_markup,
+             parse_mode=enums.ParseMode.HTML,
+             disable_web_page_preview=True
+         )
+         await query.answer(MSG_ALRT)
+
     elif query.data == "subscription":
+         buttons = [[
+             InlineKeyboardButton('⬅️ Volver', callback_data='start')
+             # Añadir botón de planes si existe
+             # InlineKeyboardButton('Ver Planes', callback_data='view_plans')
+         ]]
+         reply_markup = InlineKeyboardMarkup(buttons)
+         try:
+             await client.edit_message_media(
+                 query.message.chat.id,
+                 query.message.id,
+                 InputMediaPhoto(random.choice(PICS) if PICS else "https://via.placeholder.com/600x300.png?text=Premium") # Fallback
+             )
+         except Exception as e:
+             logger.warning(f"Error al cambiar media en /subscription: {e}. Ignorando.")
+
+         # Texto Premium/Referral desde Script.py (necesita traducción y ajuste de variables)
+         # Asegúrate que REFERAL_PREMIUM_TIME, REFERAL_COUNT estén definidos en config/info
+         ref_time = REFERAL_PREMIUM_TIME or "un tiempo"
+         ref_count = REFERAL_COUNT or 5
+         sub_text = script.SUBSCRIPTION_TXT.format(
+             refer_premium_time=ref_time,
+             bot_username=temp.U_NAME,
+             user_id=query.from_user.id,
+             refer_count=ref_count
+         )
+         await query.message.edit_text(
+             text=sub_text,
+             reply_markup=reply_markup,
+             parse_mode=enums.ParseMode.HTML,
+             disable_web_page_preview=True
+         )
+         await query.answer(MSG_ALRT)
+
+    # --- Secciones de Ayuda Específicas (Simplificadas) ---
+    elif query.data == "filters": # Ayuda sobre filtros manuales
         buttons = [[
-            InlineKeyboardButton('⇚Back', callback_data='start')
+            InlineKeyboardButton('✍️ Formato Texto', callback_data='manuelfilter'),
+            InlineKeyboardButton('🔘 Formato Botones', callback_data='button')
+        ],[
+            InlineKeyboardButton('⬅️ Volver a Ayuda', callback_data='help')
+            # Considerar añadir botón a Filtros Globales si existe esa ayuda
+            # InlineKeyboardButton('🌍 Filtros Globales', callback_data='global_filters_info')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+        # Media
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /filters: {e}")
+        # Texto (Desde Script.py)
+        filters_text = script.ALL_FILTERS.format(mention=query.from_user.mention) # Asegúrate que existe en script
         await query.message.edit_text(
-            text=script.SUBSCRIPTION_TXT.format(REFERAL_PREMEIUM_TIME, temp.U_NAME, query.from_user.id, REFERAL_COUNT),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "manuelfilter":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='filters'),
-            InlineKeyboardButton('Bᴜᴛᴛᴏɴs', callback_data='button')
-        ]]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        await query.message.edit_text(
-            text=script.MANUELFILTER_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "button":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='manuelfilter')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.BUTTON_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "autofilter":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='filters')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.AUTOFILTER_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "coct":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.CONNECTION_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "admin":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help'),
-            InlineKeyboardButton('ᴇxᴛʀᴀ', callback_data='extra')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.ADMIN_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            text=filters_text,
+            reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
         )
 
-    elif query.data == "store_file":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+    elif query.data == "manuelfilter": # Ayuda formato texto filtro
+        buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='filters') ]]
         reply_markup = InlineKeyboardMarkup(buttons)
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /manuelfilter: {e}")
+        # Texto (Desde Script.py)
+        manualfilter_text = script.MANUELFILTER_TXT # Asegúrate que existe en script
         await query.message.edit_text(
-            text=script.FILE_STORE_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+             text=manualfilter_text,
+             reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
         )
 
-    elif query.data == "r_txt":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+    elif query.data == "button": # Ayuda formato botones filtro
+        buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='filters') ]]
         reply_markup = InlineKeyboardMarkup(buttons)
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /button: {e}")
+        # Texto (Desde Script.py)
+        button_text = script.BUTTON_TXT # Asegúrate que existe en script
         await query.message.edit_text(
-            text=script.RENAME_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            text=button_text,
+            reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
         )
 
-    elif query.data == "s_txt":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+    # elif query.data == "autofilter": # Ayuda sobre autofiltro (si es necesaria)
+    #     buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='help') ]]
+    #     # Media, Texto (desde Script.py: script.AUTOFILTER_TXT)
+
+    elif query.data == "coct": # Ayuda sobre conexiones
+        buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='help') ]]
         reply_markup = InlineKeyboardMarkup(buttons)
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /coct: {e}")
+        # Texto (Desde Script.py)
+        connection_text = script.CONNECTION_TXT # Asegúrate que existe en script
         await query.message.edit_text(
-            text=script.STREAM_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            text=connection_text,
+            reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
         )
 
-    elif query.data == "extra":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='admin')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+    elif query.data == "admin": # Ayuda Comandos Admin
+        buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='help') ]]
+             # Quizás añadir botón a comandos extra si existen
+             # InlineKeyboardButton('Otros Comandos', callback_data='extra_admin_cmds')
         reply_markup = InlineKeyboardMarkup(buttons)
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /admin: {e}")
+        # Texto (Desde Script.py)
+        admin_text = script.ADMIN_TXT # Asegúrate que existe en script
         await query.message.edit_text(
-            text=script.EXTRAMOD_TXT.format(OWNER_LNK, CHNL_LNK),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+            text=admin_text,
+            reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
         )
-    elif query.data == "stats":
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help'),
-            InlineKeyboardButton('⟲ Rᴇғʀᴇsʜ', callback_data='rfrsh')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
+
+    elif query.data == "user_cmds": # Ayuda Comandos Usuario (si se separa de /help principal)
+         buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='help') ]]
+         reply_markup = InlineKeyboardMarkup(buttons)
+         # Media...
+         # Texto (Crear script.USER_CMDS_TXT o similar)
+         user_cmds_text = "Aquí la lista de comandos para usuarios: /start, /help, /connect, /disconnect, /connections, /info, etc."
+         await query.message.edit_text(
+             text=user_cmds_text,
+             reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
+         )
+
+    elif query.data == "sticker": # Ayuda Sticker ID
+        buttons = [[ InlineKeyboardButton('⬅️ Volver', callback_data='help') ]]
         reply_markup = InlineKeyboardMarkup(buttons)
+        try:
+            await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /sticker: {e}")
+        # Texto (Desde Script.py)
+        sticker_text = script.STICKER_TXT # Asegúrate que existe en script
+        await query.message.edit_text(
+            text=sticker_text,
+            reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True
+        )
+
+    # --- Callbacks Estadísticas (/stats) ---
+    # Mover /stats a comandos si es posible, pero si se queda en callback:
+    elif query.data == "stats" or query.data == "rfrsh": # Mostrar o refrescar stats
+        # Verificar permisos (Solo Admins del Bot)
+        if str(query.from_user.id) not in ADMINS:
+            return await query.answer("❌ Comando solo para administradores.", show_alert=True)
+
+        if query.data == "rfrsh":
+            await query.answer("Actualizando estadísticas...")
+
+        buttons = [[
+            InlineKeyboardButton('⬅️ Volver', callback_data='admin'), # O 'help' si se accede desde ahí
+            InlineKeyboardButton('🔄 Refrescar', callback_data='rfrsh')
+        ]]
+        reply_markup = InlineKeyboardMarkup(buttons)
+
+        try: # Intentar editar media si no es un refresh rápido
+            if query.data == "stats": # Solo cambiar imagen la primera vez
+                await client.edit_message_media( query.message.chat.id, query.message.id, InputMediaPhoto(random.choice(PICS) if PICS else "fallback_image_url"))
+        except Exception as e: logger.warning(f"Error media /stats: {e}")
+
+        # Obtener datos
         total_users = await db.total_users_count()
-        totl_chats = await db.total_chat_count()
-        filesp = col.count_documents({})
-        totalsec = sec_col.count_documents({})
-        stats = vjdb.command('dbStats')
-        used_dbSize = (stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))
-        free_dbSize = 512-used_dbSize
-        stats2 = sec_db.command('dbStats')
-        used_dbSize2 = (stats2['dataSize']/(1024*1024))+(stats2['indexSize']/(1024*1024))
-        free_dbSize2 = 512-used_dbSize2
-        stats3 = mydb.command('dbStats')
-        used_dbSize3 = (stats3['dataSize']/(1024*1024))+(stats3['indexSize']/(1024*1024))
-        free_dbSize3 = 512-used_dbSize3
-        await query.message.edit_text(
-            text=script.STATUS_TXT.format((int(filesp)+int(totalsec)), total_users, totl_chats, filesp, round(used_dbSize, 2), round(free_dbSize, 2), totalsec, round(used_dbSize2, 2), round(free_dbSize2, 2), round(used_dbSize3, 2), round(free_dbSize3, 2)),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "rfrsh":
-        await query.answer("Fetching MongoDb DataBase")
-        buttons = [[
-            InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help'),
-            InlineKeyboardButton('⟲ Rᴇғʀᴇsʜ', callback_data='rfrsh')
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        total_users = await db.total_users_count()
-        totl_chats = await db.total_chat_count()
-        filesp = col.count_documents({})
-        totalsec = sec_col.count_documents({})
-        stats = vjdb.command('dbStats')
-        used_dbSize = (stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))
-        free_dbSize = 512-used_dbSize
-        stats2 = sec_db.command('dbStats')
-        used_dbSize2 = (stats2['dataSize']/(1024*1024))+(stats2['indexSize']/(1024*1024))
-        free_dbSize2 = 512-used_dbSize2
-        stats3 = mydb.command('dbStats')
-        used_dbSize3 = (stats3['dataSize']/(1024*1024))+(stats3['indexSize']/(1024*1024))
-        free_dbSize3 = 512-used_dbSize3
-        await query.message.edit_text(
-            text=script.STATUS_TXT.format((int(filesp)+int(totalsec)), total_users, totl_chats, filesp, round(used_dbSize, 2), round(free_dbSize, 2), totalsec, round(used_dbSize2, 2), round(free_dbSize2, 2), round(used_dbSize3, 2), round(free_dbSize3, 2)),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "shortlink_info":
-        btn = [[
-            InlineKeyboardButton("👇Select Your Language 👇", callback_data="laninfo")
-        ],[
-            InlineKeyboardButton("Tamil", callback_data="tamil_info"),
-            InlineKeyboardButton("English", callback_data="english_info"),
-            InlineKeyboardButton("Hindi", callback_data="hindi_info")
-        ],[
-            InlineKeyboardButton("Malayalam", callback_data="malayalam_info"),
-            InlineKeyboardButton("Urdu", callback_data="urdu_info"),
-            InlineKeyboardButton("Bangla", callback_data="bangladesh_info")
-        ],[
-            InlineKeyboardButton("Telugu", callback_data="telugu_info"),
-            InlineKeyboardButton("Kannada", callback_data="kannada_info"),
-            InlineKeyboardButton("Gujarati", callback_data="gujarati_info")
-        ],[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.SHORTLINK_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "tele":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="help"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVJ01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.TELE_TXT),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "ytdl":
-        buttons = [[
-            InlineKeyboardButton('⇍ ʙᴀᴄᴋ ⇏', callback_data='help')
-        ]]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text="● ◌ ◌"
-        )
-        await query.message.edit_text(
-            text="● ● ◌"
-        )
-        await query.message.edit_text(
-            text="● ● ●"
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        await query.message.edit_text(
-            text=script.YTDL_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "share":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="help"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.SHARE_TXT),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "song":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="help"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.SONG_TXT),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "json":
-        buttons = [[
-            InlineKeyboardButton('⇍ ʙᴀᴄᴋ ⇏', callback_data='help')
-        ]]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text="● ◌ ◌"
-        )
-        await query.message.edit_text(
-            text="● ● ◌"
-        )
-        await query.message.edit_text(
-            text="● ● ●"
-        )
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        await query.message.edit_text(
-            text=script.JSON_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "sticker":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="help"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.STICKER_TXT),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "tamil_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.TAMIL_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "english_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.ENGLISH_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "hindi_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.HINDI_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "telugu_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.TELUGU_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "malayalam_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.MALAYALAM_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "urdu_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.URDU_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "bangladesh_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.BANGLADESH_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "kannada_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.KANNADA_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data == "gujarati_info":
-        btn = [[
-            InlineKeyboardButton("⟸ Bᴀᴄᴋ", callback_data="start"),
-            InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ", url="telegram.me/KingVj01")
-        ]]
-        await client.edit_message_media(
-            query.message.chat.id, 
-            query.message.id, 
-            InputMediaPhoto(random.choice(PICS))
-        )
-        reply_markup = InlineKeyboardMarkup(btn)
-        await query.message.edit_text(
-            text=(script.GUJARATI_INFO),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    elif query.data.startswith("setgs"):
-        ident, set_type, status, grp_id = query.data.split("#")
-        grpid = await active_connection(str(query.from_user.id))
+        total_chats = await db.total_chat_count()
+        files_main_db = await col.count_documents({}) if col else 0 # Contar en DB principal
+        files_sec_db = await sec_col.count_documents({}) if sec_col else 0 # Contar en DB secundaria (si existe)
+        total_files = files_main_db + files_sec_db
 
-        if str(grp_id) != str(grpid):
-            await query.message.edit("Tu Conexión Activa Ha Sido Cambiada. Ve A /conexiones Y Cambia Tu Conexión Activa")
-            return await query.answer(MSG_ALRT)
+        # Obtener tamaño de DB (puede ser lento o requerir permisos especiales en Atlas)
+        db_size_main = db_size_sec = db_size_conn = "N/A"
+        try:
+             if vjdb: # Si la conexión a la DB principal de archivos está activa
+                  stats_main = await vjdb.command('dbStats')
+                  db_size_main = f"{(stats_main.get('dataSize', 0) + stats_main.get('indexSize', 0)) / (1024*1024):.2f} MB"
+             if sec_db: # Si la conexión a la DB secundaria de archivos está activa
+                  stats_sec = await sec_db.command('dbStats')
+                  db_size_sec = f"{(stats_sec.get('dataSize', 0) + stats_sec.get('indexSize', 0)) / (1024*1024):.2f} MB"
+             if mydb: # Si la conexión a la DB de conexiones/usuarios está activa
+                  stats_conn = await mydb.command('dbStats')
+                  db_size_conn = f"{(stats_conn.get('dataSize', 0) + stats_conn.get('indexSize', 0)) / (1024*1024):.2f} MB"
+        except Exception as e:
+            logger.error(f"Error obteniendo dbStats: {e}")
+            db_size_main = db_size_sec = db_size_conn = "Error"
 
-        if status == "True":
-            await save_group_settings(grpid, set_type, False)
-        else:
-            settings = await get_settings(grpid)
-            if set_type == "is_shortlink" and not settings['shortlink']:
-                return await query.answer(text = "First Add Your Shortlink Url And Api By /shortlink Command, Then Turn Me On.", show_alert = True)
-            await save_group_settings(grpid, set_type, True)
+        # Texto de Estadísticas (Usar script.STATUS_TXT y traducir/adaptar)
+        stats_text = f"""📊 <b>Estadísticas del Bot</b> 📊
 
-        settings = await get_settings(grpid)
+👤 <b>Usuarios Totales:</b> {total_users}
+👥 <b>Chats Totales:</b> {total_chats}
 
-        if settings is not None:
-            buttons = [
-                [
-                    InlineKeyboardButton('Rᴇsᴜʟᴛ Pᴀɢᴇ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('Bᴜᴛᴛᴏɴ' if settings["button"] else 'Tᴇxᴛ',
-                                         callback_data=f'setgs#button#{settings["button"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Pʀᴏᴛᴇᴄᴛ Cᴏɴᴛᴇɴᴛ',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["file_secure"] else '✘ Oғғ',
-                                         callback_data=f'setgs#file_secure#{settings["file_secure"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Iᴍᴅʙ', callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["imdb"] else '✘ Oғғ',
-                                         callback_data=f'setgs#imdb#{settings["imdb"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Sᴘᴇʟʟ Cʜᴇᴄᴋ',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["spell_check"] else '✘ Oғғ',
-                                         callback_data=f'setgs#spell_check#{settings["spell_check"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Wᴇʟᴄᴏᴍᴇ Msɢ', callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["welcome"] else '✘ Oғғ',
-                                         callback_data=f'setgs#welcome#{settings["welcome"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Aᴜᴛᴏ-Dᴇʟᴇᴛᴇ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('5 Mɪɴs' if settings["auto_delete"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_delete#{settings["auto_delete"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Aᴜᴛᴏ-Fɪʟᴛᴇʀ',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["auto_ffilter"] else '✘ Oғғ',
-                                         callback_data=f'setgs#auto_ffilter#{settings["auto_ffilter"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('Mᴀx Bᴜᴛᴛᴏɴs',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
-                                         callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
-                ],
-                [
-                    InlineKeyboardButton('SʜᴏʀᴛLɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('✔ Oɴ' if settings["is_shortlink"] else '✘ Oғғ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await query.message.edit_reply_markup(reply_markup)
-    await query.answer(MSG_ALRT)
+🗂️ <b>Archivos Indexados:</b>
+   - DB Principal: {files_main_db}
+   - DB Secundaria: {files_sec_db}
+   - <b>Total: {total_files}</b>
+
+💾 <b>Tamaño Bases de Datos (aprox):</b>
+   - Archivos (Main): {db_size_main}
+   - Archivos (Sec): {db_size_sec}
+   - Usuarios/Conexiones: {db_size_conn}
+"""
+        try:
+            await query.message.edit_text(
+                text=stats_text,
+                reply_markup=reply_markup,
+                parse_mode=enums.ParseMode.HTML
+            )
+        except MessageNotModified:
+            # Si el texto no cambió (refresh rápido), solo responder al callback
+            pass
+        # Responder al callback original de stats o rfrsh
+        if query.data == "stats":
+           await query.answer(MSG_ALRT)
+        # No es necesario responder a rfrsh si ya se hizo antes
+        return
+
+
+    # --- Callbacks residuales o desconocidos ---
+    # Si llega aquí, es un callback no manejado explícitamente
+    # Podríamos loggearlo o simplemente ignorarlo
+    else:
+        logger.warning(f"Callback no manejado recibido: {query.data}")
+        await query.answer("Opción no reconocida o desactualizada.", show_alert=True) # Informar al usuario
+
+
+# --- Funciones Auxiliares (Refactorizadas o Nuevas) ---
+
+async def show_connections(client, message, user_id):
+    """Función auxiliar para mostrar las conexiones de un usuario."""
+    groupids = await all_connections(str(user_id)) # Asume que existe
+    if not groupids:
+        await message.edit_text("🔗 No tienes conexiones activas. Usa /connect en un grupo para empezar.")
+        return
+
+    buttons = []
+    active_found = False
+    for groupid_str in groupids:
+        try:
+            groupid = int(groupid_str)
+            ttl = await client.get_chat(groupid)
+            title = ttl.title
+            active = await if_active(str(user_id), str(groupid)) # Asume que existe
+            act_indicator = " (Activa)" if active else ""
+            if active: active_found = True
+            buttons.append(
+                [InlineKeyboardButton(text=f"{title}{act_indicator}", callback_data=f"groupcb:{groupid}:{active}")]
+            )
+        except Exception as e:
+             logger.warning(f"Error obteniendo info del grupo {groupid_str} para conexiones de {user_id}: {e}")
+             # Opcional: Añadir botón para eliminar conexión rota?
+             # buttons.append([InlineKeyboardButton(f"Grupo ID {groupid_str} (Error)", callback_data=f"deletecb:{groupid_str}")])
+             pass # Ignorar grupos inaccesibles
+
+    if not buttons: # Si todos los grupos dieron error
+        await message.edit_text("🔗 No se pudieron cargar tus conexiones. Inténtalo de nuevo más tarde.")
+        return
+
+    # Añadir mensaje si ninguna conexión está activa
+    conn_text = "🔗 Tus conexiones:\nSelecciona una para ver opciones."
+    if not active_found:
+        conn_text += "\n\n<i>(Ninguna conexión está activa. Haz clic en una y luego en 'Conectar' para activarla)</i>"
+
+    # Añadir botón para cerrar
+    buttons.append([InlineKeyboardButton("Cerrar", callback_data="close_data")])
+
+    await message.edit_text(
+        conn_text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode=enums.ParseMode.HTML
+    )
+
 
 async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
-    curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-    if not spoll:
+    # Hora de inicio para calcular tiempo de búsqueda
+    start_time_utc = datetime.now(pytz.utc)
+
+    message = None
+    search = ""
+    files = []
+    offset = 0
+    total_results = 0
+    user_id = 0
+    chat_id = 0
+    message_id = 0 # ID del mensaje original del usuario
+
+    if not spoll: # Búsqueda normal (no desde corrección ortográfica)
         message = msg
-        if message.text.startswith("/"): return  # ignore commands
-        if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
+        user_id = message.from_user.id if message.from_user else 0
+        chat_id = message.chat.id
+        message_id = message.id
+
+        # Ignorar comandos y patrones no deseados
+        if message.text.startswith("/") or re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
+            try: await reply_msg.delete() # Borrar "Buscando..." si es un comando
+            except: pass
             return
-        if len(message.text) < 100:
-            search = name
-            search = search.lower()
-            find = search.split(" ")
-            search = ""
-            removes = ["in","upload", "series", "full", "horror", "thriller", "mystery", "print", "file"]
-            for x in find:
-                if x in removes:
-                    continue
-                else:
-                    search = search + x + " "
-            search = re.sub(r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|bro|bruh|broh|helo|that|find|dubbed|link|venum|iruka|pannunga|pannungga|anuppunga|anupunga|anuppungga|anupungga|film|undo|kitti|kitty|tharu|kittumo|kittum|movie|any(one)|with\ssubtitle(s)?)", "", search, flags=re.IGNORECASE)
-            search = re.sub(r"\s+", " ", search).strip()
-            search = search.replace("-", " ")
-            search = search.replace(":", "")
-            search = search.replace(".", "")
-            files, offset, total_results = await get_search_results(message.chat.id ,search, offset=0, filter=True)
-            settings = await get_settings(message.chat.id)
-            if not files:
-                if settings["spell_check"]:
-                    return await advantage_spell_chok(client, name, msg, reply_msg, ai_search)
-                else:
-                    return await reply_msg.edit_text(f"**⚠️ No File Found For Your Query - {name}**\n**Make Sure Spelling Is Correct.**")
-        else:
+
+        # Simplificar y limpiar consulta de búsqueda
+        search = name.lower()
+        # Eliminar palabras comunes/innecesarias (personalizar según idioma/uso)
+        common_words = ["pelicula", "serie", "episodio", "temporada", "completa", "descargar", "ver", "online", "español", "latino", "subtitulado", "audio", "calidad", "hd", "fullhd", "4k", "castellano", "ingles", "original", "movie", "series", "episode", "season", "full", "download", "watch", "online", "spanish", "english", "audio", "quality", "dubbed", "subbed", "pls", "please", "busca", "encuentra", "quiero", "necesito", "puedes", "tienes"]
+        # Quitar puntuación básica y espacios extra
+        search = re.sub(r'[.,;:!?"\'`´’‘]', '', search)
+        search_words = search.split()
+        # Filtrar palabras comunes y reconstruir
+        filtered_words = [word for word in search_words if word not in common_words]
+        search = " ".join(filtered_words).strip()
+
+        # Si la búsqueda queda vacía o muy corta, no buscar
+        if not search or len(search) < 3:
+            await reply_msg.edit_text(f"⚠️ Tu búsqueda '{name}' es muy corta o no contiene términos válidos. Intenta ser más específico.")
             return
-    else:
-        message = msg.message.reply_to_message  # msg will be callback query
+
+        # Obtener resultados de la base de datos
+        # Usar chat_id para filtros específicos si aplica, o global si es PM/configurado
+        files, offset, total_results = await get_search_results(chat_id, search, offset=0, filter=True)
+
+    else: # Búsqueda desde corrección ortográfica (spoll=True)
+        # msg aquí es la CallbackQuery
+        message = msg.message.reply_to_message # El mensaje original del usuario
+        if not message: # Si el mensaje original fue borrado
+             await reply_msg.edit_text("⚠️ Error: No se encontró el mensaje de búsqueda original.")
+             return
+
+        user_id = message.from_user.id if message.from_user else 0
+        chat_id = message.chat.id
+        message_id = message.id
+        # Los datos vienen desempaquetados de `spoll`
         search, files, offset, total_results = spoll
-        settings = await get_settings(message.chat.id)
-        await msg.message.delete()
-    pre = 'filep' if settings['file_secure'] else 'file'
-    key = f"{message.chat.id}-{message.id}"
-    req = message.from_user.id if message.from_user else 0
-    FRESH[key] = search
-    temp.GETALL[key] = files
-    temp.SHORT[message.from_user.id] = message.chat.id
-    if settings["button"]:
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}", callback_data=f'{pre}#{file["file_id"]}'
-                ),
-            ]
-            for file in files
-        ]
-        btn.insert(0, [
-            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
-        ])
-    else:
-        btn.insert(0, [
-            InlineKeyboardButton("Eɴᴠɪᴀʀ Tᴏᴅᴏ 💀", callback_data=f"sendfiles#{key}")
-        ])
-    if offset != "":
-        try:
-            if settings['max_btn']:
-                btn.append(
-                    [InlineKeyboardButton(text="⫸",callback_data=f"next_{req}_{key}_{offset}")]
-                )
-            else:
-                btn.append(
-                    [InlineKeyboardButton(text="⫸",callback_data=f"next_{req}_{key}_{offset}")]
-                )
-        except KeyError:
-            await save_group_settings(message.chat.id, 'max_btn', True)
-            btn.append(
-                [InlineKeyboardButton(text="⫸",callback_data=f"next_{req}_{key}_{offset}")]
-            )
-    else:
-        btn.append(
-            [InlineKeyboardButton(text="Nᴇss Cʟᴏᴜᴅ",callback_data="pages")]
-        )
-    imdb = await get_poster(search, file=(files[0])['file_name']) if settings["imdb"] else None
-    cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-    time_difference = timedelta(hours=cur_time.hour, minutes=cur_time.minute, seconds=(cur_time.second+(cur_time.microsecond/1000000))) - timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=(curr_time.second+(curr_time.microsecond/1000000)))
-    remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
-    TEMPLATE = script.IMDB_TEMPLATE_TXT
-    if imdb:
-        cap = TEMPLATE.format(
-            qurey=search,
-            title=imdb['title'],
-            votes=imdb['votes'],
-            aka=imdb["aka"],
-            seasons=imdb["seasons"],
-            box_office=imdb['box_office'],
-            localized_title=imdb['localized_title'],
-            kind=imdb['kind'],
-            imdb_id=imdb["imdb_id"],
-            cast=imdb["cast"],
-            runtime=imdb["runtime"],
-            countries=imdb["countries"],
-            certificates=imdb["certificates"],
-            languages=imdb["languages"],
-            director=imdb["director"],
-            writer=imdb["writer"],
-            producer=imdb["producer"],
-            composer=imdb["composer"],
-            cinematographer=imdb["cinematographer"],
-            music_team=imdb["music_team"],
-            distributors=imdb["distributors"],
-            release_date=imdb['release_date'],
-            year=imdb['year'],
-            genres=imdb['genres'],
-            poster=imdb['poster'],
-            plot=imdb['plot'],
-            rating=imdb['rating'],
-            url=imdb['url'],
-            **locals()
-        )
-        temp.IMDB_CAP[message.from_user.id] = cap
-        if not settings["button"]:
-            cap+="<b>\n\n<u>🍿 | Tus Archivos de Película/series | 👇</u></b>\n"
-            for file in files:
-                cap += f"<b>\n📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n</a></b>"
-    else:
-        if settings["button"]:
-            cap = f"<b> 🔍 | RESULTADOS PARA ➡️ {search}\n\n 🗿 | Solicitado Por ➡️ {message.from_user.mention}\n ⏱️ | Tiempo de Búsqueda en ➡️ {remaining_seconds} Segundos\n ⚙️ | Proporcionado por ➡️ {message.chat.title} \n\n⚠️ | Después de 5 minutos, este mensaje será eliminado automáticamente |🗑️\n\n</b>"
+        # El reply_msg ya existe (el mensaje de "Buscando...")
+
+    # --- Manejo de Resultados ---
+    settings = await get_settings(chat_id)
+
+    # Si no hay resultados
+    if not files or total_results == 0:
+        # Intentar corrección ortográfica si está activada
+        if settings.get("spell_check", True): # Activado por defecto
+            return await advantage_spell_chok(client, name, msg, reply_msg, ai_search) # Pasamos `name` original
         else:
-            cap = f"<b> 🔍 | RESULTADOS PARA ➡️ {search}\n\n 🗿 | Solicitado Por ➡️ {message.from_user.mention}\n\n ⏱️ | Tiempo de Búsqueda en ➡️ {remaining_seconds} Segundos\n\n ⚙️ | Proporcionado por ➡️ {message.chat.title} \n\n⚠️ | Después de 5 minutos, este mensaje será eliminado automáticamente |🗑️\n\n</b>"
-            cap+="<b><u>🍿 | Tus Archivos de Película/series | 👇</u></b>\n\n"
-            for file in files:
-                cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
+            no_results_text = f"❌ No encontré resultados para '<b>{search}</b>'."
+            # Opcional: Mensaje de log si está activado
+            if NO_RESULTS_MSG and LOG_CHANNEL:
+                 try:
+                      user_mention = message.from_user.mention if message.from_user else "Usuario Desconocido"
+                      await client.send_message(LOG_CHANNEL, f"⚠️ Sin resultados para '{search}' solicitado por {user_mention} (ID: {user_id}) en chat {chat_id}.")
+                 except Exception as log_err:
+                      logger.error(f"Error enviando log de NO_RESULTS: {log_err}")
+            return await reply_msg.edit_text(no_results_text, parse_mode=enums.ParseMode.HTML)
 
-    if imdb and imdb.get('poster'):
+    # --- Si hay resultados, preparar respuesta ---
+    # Prefijo para callbacks de archivo ('filep' o 'file')
+    file_cb_prefix = 'filep' if settings.get('file_secure') else 'file'
+    # Clave única para esta búsqueda (para paginación y 'Enviar Todo')
+    key = f"{chat_id}-{message_id}"
+    # Guardar búsqueda y archivos temporalmente
+    FRESH[key] = search
+    temp.GETALL[key] = files # Para 'Enviar Todo'
+    # temp.SHORT[user_id] = chat_id # ¿Aún necesario? Revisar
+
+    # Determinar si se usan botones o texto/enlaces
+    show_buttons = settings.get('button', True) # Botones por defecto
+    max_buttons_per_page = 10 if settings.get('max_btn', True) else MAX_B_TN # Usa MAX_B_TN de config
+
+    btn = []
+
+    # Botón Premium "Enviar Todo"
+    btn.append([
+        InlineKeyboardButton("✨ Enviar Todo (Premium)", callback_data=f"sendfiles#{key}")
+    ])
+
+    # Botones individuales (si aplica)
+    if show_buttons:
+        for file in files[:max_buttons_per_page]: # Limitar a la primera página
+            file_name_display = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.get('file_name', 'archivo').split()))
+            btn.append([
+                InlineKeyboardButton(
+                    text=f"[{get_size(file['file_size'])}] {file_name_display}",
+                    callback_data=f'{file_cb_prefix}#{file["file_id"]}'
+                )
+            ])
+
+    # Botones de Paginación (solo si hay más páginas)
+    has_next = offset != 0 # offset aquí es el offset para la SIGUIENTE página
+
+    if has_next:
+        current_page = 1 # Siempre es la primera página aquí
+        total_pages = math.ceil(total_results / max_buttons_per_page)
+        pagination_row = [
+             # Placeholder para Anterior (no aplica en la primera pág)
+             InlineKeyboardButton(" ", callback_data="noop"),
+             InlineKeyboardButton(f"📄 {current_page}/{total_pages}", callback_data="noop"),
+             InlineKeyboardButton("Siguiente ➡️", callback_data=f"next_{user_id}_{key}_{offset}")
+        ]
+        btn.append(pagination_row)
+    # else: # Si solo hay una página, no añadir botones de paginación
+    #     btn.append([InlineKeyboardButton(text="✅ Fin de Resultados", callback_data="noop")])
+
+    # --- Generar Caption ---
+    # Calcular tiempo de búsqueda
+    end_time_utc = datetime.now(pytz.utc)
+    time_difference = end_time_utc - start_time_utc
+    search_time_seconds = f"{time_difference.total_seconds():.2f}"
+
+    # Intentar obtener póster de IMDb si está activado
+    imdb_data = None
+    if settings.get("imdb", True): # Activado por defecto
         try:
-            hehe = await message.reply_photo(photo=imdb.get('poster'), caption=cap, reply_markup=InlineKeyboardMarkup(btn))
-            await reply_msg.delete()
-            try:
-                if settings['auto_delete']:
-                    await asyncio.sleep(300)
-                    await hehe.delete()
-                    await message.delete()
-            except KeyError:
-                await save_group_settings(message.chat.id, 'auto_delete', True)
-                await asyncio.sleep(300)
-                await hehe.delete()
-                await message.delete()
-        except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
-            pic = imdb.get('poster')
-            poster = pic.replace('.jpg', "._V1_UX360.jpg") 
-            hmm = await message.reply_photo(photo=poster, caption=cap, reply_markup=InlineKeyboardMarkup(btn))
-            await reply_msg.delete()
-            try:
-               if settings['auto_delete']:
-                    await asyncio.sleep(300)
-                    await hmm.delete()
-                    await message.delete()
-            except KeyError:
-                await save_group_settings(message.chat.id, 'auto_delete', True)
-                await asyncio.sleep(300)
-                await hmm.delete()
-                await message.delete()
+             # Usar el nombre del primer archivo como pista si la búsqueda es ambigua
+             imdb_data = await get_poster(search, file=(files[0])['file_name'])
         except Exception as e:
-            logger.exception(e) 
-            fek = await reply_msg.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn))
-            try:
-                if settings['auto_delete']:
-                    await asyncio.sleep(300)
-                    await fek.delete()
-                    await message.delete()
-            except KeyError:
-                await save_group_settings(message.chat.id, 'auto_delete', True)
-                await asyncio.sleep(300)
-                await fek.delete()
-                await message.delete()
-    else:
-        fuk = await reply_msg.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+             logger.warning(f"Error obteniendo datos de IMDb para '{search}': {e}")
 
+    final_caption = ""
+    photo_to_send = None
+
+    # Construir caption con plantilla IMDb si hay datos y póster
+    if imdb_data and imdb_data.get('poster'):
+        photo_to_send = imdb_data.get('poster')
+        # Usar plantilla traducida de Script.py
         try:
-            if settings['auto_delete']:
-                await asyncio.sleep(300)
-                await fuk.delete()
-                await message.delete()
-        except KeyError:
-            await save_group_settings(message.chat.id, 'auto_delete', True)
-            await asyncio.sleep(300)
-            await fuk.delete()
-            await message.delete()
+             # Asegúrate que script.IMDB_TEMPLATE_TXT existe y está traducido
+             # Pasar **locals() puede ser inseguro si hay variables inesperadas
+             # Mejor pasar explícitamente lo necesario o usar un dict limpio
+             template_data = {
+                 'query': search, 'title': imdb_data.get('title', 'N/A'), 'votes': imdb_data.get('votes', 'N/A'),
+                 'aka': imdb_data.get('aka', 'N/A'), 'seasons': imdb_data.get('seasons', 'N/A'),
+                 'box_office': imdb_data.get('box_office', 'N/A'), 'localized_title': imdb_data.get('localized_title', 'N/A'),
+                 'kind': imdb_data.get('kind', 'N/A'), 'imdb_id': imdb_data.get('imdb_id', 'N/A'),
+                 'cast': ", ".join(imdb_data.get('cast', [])[:3]) + ('...' if len(imdb_data.get('cast', [])) > 3 else ''), # Limitar cast
+                 'runtime': imdb_data.get('runtime', 'N/A'), 'countries': ", ".join(imdb_data.get('countries', [])),
+                 'certificates': ", ".join(imdb_data.get('certificates', [])), 'languages': ", ".join(imdb_data.get('languages', [])),
+                 'director': ", ".join(imdb_data.get('director', [])), 'writer': ", ".join(imdb_data.get('writer', [])),
+                 'producer': ", ".join(imdb_data.get('producer', [])), 'composer': ", ".join(imdb_data.get('composer', [])),
+                 'cinematographer': ", ".join(imdb_data.get('cinematographer', [])), 'music_team': ", ".join(imdb_data.get('music_team', [])),
+                 'distributors': ", ".join(imdb_data.get('distributors', [])), 'release_date': imdb_data.get('release_date', 'N/A'),
+                 'year': imdb_data.get('year', 'N/A'), 'genres': ", ".join(imdb_data.get('genres', [])),
+                 'plot': imdb_data.get('plot', 'N/A')[:200] + ('...' if len(imdb_data.get('plot', 'N/A')) > 200 else ''), # Limitar plot
+                 'rating': imdb_data.get('rating', 'N/A'), 'url': imdb_data.get('url', '#'),
+                 'search_time': search_time_seconds,
+                 'requester': message.from_user.mention if message.from_user else "N/A",
+                 'total_results': total_results
+             }
+             final_caption = script.IMDB_TEMPLATE_TXT.format(**template_data)
+        except Exception as template_err:
+             logger.error(f"Error formateando plantilla IMDb: {template_err}")
+             # Usar caption básico como fallback
+             final_caption = f"Resultados para: <b>{search}</b> ({total_results} encontrados en {search_time_seconds}s)"
+
+        # Si no se usan botones, añadir lista de archivos al caption IMDb
+        if not show_buttons:
+             final_caption += "\n\n<b>Archivos disponibles:</b>\n"
+             is_premium_user = await db.has_premium_access(user_id)
+             use_shortlink = SHORTLINK_ENABLED and not is_premium_user
+             for file in files[:max_buttons_per_page]:
+                 start_link_payload = f"{file_cb_prefix}_{file['file_id']}"
+                 if use_shortlink and SHORTLINK_URL and SHORTLINK_API:
+                      final_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, f"https://t.me/{temp.U_NAME}?start={start_link_payload}")
+                 else:
+                      final_link = f"https://t.me/{temp.U_NAME}?start={start_link_payload}"
+                 file_name_display = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.get('file_name', 'archivo').split()))
+                 final_caption += f"📁 <a href='{final_link}'>[{get_size(file['file_size'])}] {file_name_display}</a>\n"
+
+    else: # Sin IMDb o sin póster, usar caption de texto
+        final_caption = f"Resultados para: <b>{search}</b>\n({total_results} encontrados en {search_time_seconds}s)\n"
+        final_caption += f"Solicitado por: {message.from_user.mention if message.from_user else 'N/A'}\n"
+        if message.chat.title: final_caption += f"Grupo: {message.chat.title}\n"
+        final_caption += "\n"
+
+        # Añadir lista de archivos si no se usan botones
+        if not show_buttons:
+            final_caption += "<b>Archivos disponibles:</b>\n"
+            is_premium_user = await db.has_premium_access(user_id)
+            use_shortlink = SHORTLINK_ENABLED and not is_premium_user
+            for file in files[:max_buttons_per_page]:
+                start_link_payload = f"{file_cb_prefix}_{file['file_id']}"
+                if use_shortlink and SHORTLINK_URL and SHORTLINK_API:
+                    final_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, f"https://t.me/{temp.U_NAME}?start={start_link_payload}")
+                else:
+                    final_link = f"https://t.me/{temp.U_NAME}?start={start_link_payload}"
+                file_name_display = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.get('file_name', 'archivo').split()))
+                final_caption += f"📁 <a href='{final_link}'>[{get_size(file['file_size'])}] {file_name_display}</a>\n"
+
+    # Añadir nota de auto-borrado si está activada
+    auto_delete_enabled = settings.get('auto_delete', False)
+    if auto_delete_enabled:
+         final_caption += f"\n\n<i>ℹ️ Este mensaje se eliminará automáticamente en {AUTO_DELETE_SECONDS // 60} minutos.</i>"
+
+    # --- Enviar la respuesta final ---
+    reply_markup = InlineKeyboardMarkup(btn) if btn else None
+    sent_message = None
+
+    try:
+        if photo_to_send:
+             sent_message = await message.reply_photo(
+                 photo=photo_to_send,
+                 caption=final_caption,
+                 reply_markup=reply_markup,
+                 parse_mode=enums.ParseMode.HTML
+            )
+        else:
+             sent_message = await reply_msg.edit_text( # Editar el mensaje "Buscando..."
+                 text=final_caption,
+                 reply_markup=reply_markup,
+                 disable_web_page_preview=(not show_buttons), # Deshabilitar preview si hay enlaces en texto
+                 parse_mode=enums.ParseMode.HTML
+            )
+        # Borrar "Buscando..." si se envió foto como nueva respuesta
+        if photo_to_send:
+            try: await reply_msg.delete()
+            except: pass
+
+    except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty) as img_err:
+        logger.warning(f"Error de imagen al enviar resultado ({imdb_data.get('poster', 'N/A')}): {img_err}. Enviando como texto.")
+        photo_to_send = imdb_data.get('poster', '').replace('.jpg', "._V1_UX360.jpg") # Intentar con tamaño menor
+        try: # Reintentar con URL modificada o fallback a texto
+            sent_message = await message.reply_photo(
+                photo=photo_to_send, caption=final_caption, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML
+            )
+            if photo_to_send: await reply_msg.delete() # Borrar "Buscando..." si funcionó la foto
+        except Exception: # Si falla de nuevo, enviar como texto
+             sent_message = await reply_msg.edit_text(
+                 text=final_caption, reply_markup=reply_markup, disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML
+            )
+    except MessageNotModified:
+        # Puede ocurrir si la búsqueda fue muy rápida y el texto es idéntico
+        sent_message = reply_msg # El mensaje ya existe
+    except Exception as e:
+        logger.exception(f"Error grave al enviar resultado para '{search}': {e}")
+        try: # Último intento de informar error
+             await reply_msg.edit_text(f"❌ Ocurrió un error inesperado al mostrar los resultados para '{search}'.")
+        except: pass # Si todo falla...
+
+    # Programar auto-borrado si está activado y el mensaje se envió
+    if auto_delete_enabled and sent_message:
+        await asyncio.sleep(AUTO_DELETE_SECONDS) # Usar valor de config
+        try:
+             await sent_message.delete()
+             # Opcional: borrar también el mensaje original del usuario
+             if DELETE_USER_MESSAGE: await message.delete()
+        except Exception as delete_err:
+             logger.warning(f"No se pudo auto-borrar mensaje {sent_message.id} en chat {chat_id}: {delete_err}")
+
 
 async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
-    mv_id = msg.id
-    mv_rqst = name
-    reqstr1 = msg.from_user.id if msg.from_user else 0
-    reqstr = await client.get_users(reqstr1)
-    settings = await get_settings(msg.chat.id)
-    query = re.sub(
-        r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "", msg.text, flags=re.IGNORECASE)  # plis contribute some common words
-    query = query.strip() + " movie"
+    """Maneja la corrección ortográfica si la búsqueda inicial falla."""
+
+    # `msg` puede ser `message` o `query` dependiendo de dónde se llame
+    message = msg if isinstance(msg, pyrogram.types.Message) else msg.message
+    user_id = message.from_user.id if message.from_user else 0
+    chat_id = message.chat.id
+    # Usar ID del reply_msg (el que tiene los botones de sugerencia) para guardar/recuperar
+    spell_check_msg_id = reply_msg.id
+
+    # Intentar obtener sugerencias de IMDb
     try:
-        movies = await get_poster(mv_rqst, bulk=True)
+        # `name` es la búsqueda original que falló
+        movies_data = await get_poster(name, bulk=True)
+        if not movies_data:
+            raise ValueError("IMDb no devolvió sugerencias")
     except Exception as e:
-        logger.exception(e)
-        reqst_gle = mv_rqst.replace(" ", "+")
-        button = [[
-            InlineKeyboardButton("Google", url=f"https://www.google.com/search?q={reqst_gle}")
-        ]]
-        if NO_RESULTS_MSG:
-            await client.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, mv_rqst)))
-        k = await reply_msg.edit_text(text=script.I_CUDNT.format(mv_rqst), reply_markup=InlineKeyboardMarkup(button))
-        await asyncio.sleep(30)
-        await k.delete()
-        return
-    movielist = []
-    if not movies:
-        reqst_gle = mv_rqst.replace(" ", "+")
-        button = [[
-            InlineKeyboardButton("Google", url=f"https://www.google.com/search?q={reqst_gle}")
-        ]]
-        if NO_RESULTS_MSG:
-            await client.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, mv_rqst)))
-        k = await reply_msg.edit_text(text=script.I_CUDNT.format(mv_rqst), reply_markup=InlineKeyboardMarkup(button))
-        await asyncio.sleep(30)
-        await k.delete()
-        return
-    movielist += [movie.get('title') for movie in movies]
-    movielist += [f"{movie.get('title')} {movie.get('year')}" for movie in movies]
-    SPELL_CHECK[mv_id] = movielist
-    if AI_SPELL_CHECK == True and vj_search == True:
-        vj_search_new = False
-        vj_ai_msg = await reply_msg.edit_text("<i>⚠ No item found for your query. Please double-check the spelling or try searching on Google.</i>")
-        movienamelist = []
-        movienamelist += [movie.get('title') for movie in movies]
-        for techvj in movienamelist:
-            try:
-                mv_rqst = mv_rqst.capitalize()
-            except:
-                pass
-            if mv_rqst.startswith(techvj[0]):
-                await auto_filter(client, techvj, msg, reply_msg, vj_search_new)
-                break
-        reqst_gle = mv_rqst.replace(" ", "+")
-        button = [[
-            InlineKeyboardButton("Gᴏᴏɢʟᴇ", url=f"https://www.google.com/search?q={reqst_gle}")
-        ]]
-        if NO_RESULTS_MSG:
-            await client.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(reqstr.id, reqstr.mention, mv_rqst)))
-        k = await reply_msg.edit_text(text=script.I_CUDNT.format(mv_rqst), reply_markup=InlineKeyboardMarkup(button))
-        await asyncio.sleep(30)
-        await k.delete()
-        return
-    else:
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=movie_name.strip(),
-                    callback_data=f"spol#{reqstr1}#{k}",
-                )
-            ]
-            for k, movie_name in enumerate(movielist)
-        ]
-        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spol#{reqstr1}#close_spellcheck')])
-        spell_check_del = await reply_msg.edit_text(
-            text=script.CUDNT_FND.format(mv_rqst),
-            reply_markup=InlineKeyboardMarkup(btn)
+        logger.warning(f"Corrector ortográfico: No se obtuvieron sugerencias de IMDb para '{name}': {e}")
+        req_url = f"https://www.google.com/search?q={quote_plus(name)}"
+        google_btn = [[InlineKeyboardButton("🔎 Buscar en Google", url=req_url)]]
+        await reply_msg.edit_text(
+            text=f"❌ No encontré resultados para '<b>{name}</b>' y no pude obtener sugerencias.\n\nPuedes intentar buscar en Google:",
+            reply_markup=InlineKeyboardMarkup(google_btn),
+            parse_mode=enums.ParseMode.HTML
         )
+        return # No hay más que hacer
+
+    # Crear lista de sugerencias (título y título + año)
+    suggestions = []
+    suggestions += [movie.get('title') for movie in movies_data if movie.get('title')]
+    suggestions += [f"{movie.get('title')} ({movie.get('year')})" for movie in movies_data if movie.get('title') and movie.get('year')]
+    # Eliminar duplicados manteniendo el orden (aproximado)
+    suggestions = list(dict.fromkeys(suggestions))
+    # Limitar número de sugerencias
+    suggestions = suggestions[:MAX_SPELL_SUGGESTIONS] # Usar valor de config
+
+    if not suggestions:
+        # Si IMDb devolvió datos pero sin títulos válidos
+        await reply_msg.edit_text(f"❌ No encontré resultados para '<b>{name}</b>' y las sugerencias no fueron claras.", parse_mode=enums.ParseMode.HTML)
+        return
+
+    # Guardar sugerencias para el callback 'spol'
+    SPELL_CHECK[spell_check_msg_id] = suggestions
+
+    # Crear botones para las sugerencias
+    btn = []
+    for i, movie_name in enumerate(suggestions):
+        btn.append([
+            InlineKeyboardButton(text=movie_name.strip(), callback_data=f"spol#{user_id}#{i}")
+        ])
+    # Botón para cerrar
+    btn.append([InlineKeyboardButton(text="✖️ Cerrar Sugerencias", callback_data=f'spol#{user_id}#close_spellcheck')])
+
+    # Editar el mensaje "Buscando..." para mostrar las sugerencias
+    settings = await get_settings(chat_id) # Necesario para auto-borrado
+    spell_check_del = await reply_msg.edit_text(
+        text=f"🤔 No encontré '<b>{name}</b>'.\n\n¿Quizás quisiste decir alguna de estas?",
+        reply_markup=InlineKeyboardMarkup(btn),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+    # Programar auto-borrado del mensaje de sugerencias si está activado
+    if settings.get('auto_delete', False): # Usar el mismo setting que los resultados
+        await asyncio.sleep(AUTO_DELETE_SECONDS) # Mismo tiempo que resultados
         try:
-            if settings['auto_delete']:
-                await asyncio.sleep(600)
-                await spell_check_del.delete()
-        except KeyError:
-            grpid = await active_connection(str(msg.from_user.id))
-            await save_group_settings(grpid, 'auto_delete', True)
-            settings = await get_settings(msg.chat.id)
-            if settings['auto_delete']:
-                await asyncio.sleep(600)
-                await spell_check_del.delete()
+            await spell_check_del.delete()
+            # Limpiar del diccionario si se borra
+            if spell_check_msg_id in SPELL_CHECK: del SPELL_CHECK[spell_check_msg_id]
+        except Exception as delete_err:
+            logger.warning(f"No se pudo auto-borrar mensaje de sugerencias {spell_check_msg_id}: {delete_err}")
+
+# --- Filtros Manuales y Globales (Simplificado) ---
+# (Requieren funciones find_filter, get_filters, find_gfilter, get_gfilters desde DB)
 
 async def manual_filters(client, message, text=False):
+    """Busca coincidencias con filtros manuales definidos para el grupo."""
     settings = await get_settings(message.chat.id)
     group_id = message.chat.id
-    name = text or message.text
+    query_text = text or message.text # Usar texto proporcionado o el del mensaje
+    # ID del mensaje al que responder (el del usuario o el que se está respondiendo)
     reply_id = message.reply_to_message.id if message.reply_to_message else message.id
-    keywords = await get_filters(group_id)
-    for keyword in reversed(sorted(keywords, key=len)):
-        pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
-        if re.search(pattern, name, flags=re.IGNORECASE):
-            reply_text, btn, alert, fileid = await find_filter(group_id, keyword)
 
+    try:
+        keywords = await get_filters(group_id) # Obtener filtros de la DB para este grupo
+    except Exception as e:
+        logger.error(f"Error obteniendo filtros manuales para grupo {group_id}: {e}")
+        return False # No continuar si fallan los filtros
+
+    if not keywords:
+        return False # No hay filtros definidos para este grupo
+
+    # Buscar coincidencias (sensible a mayúsculas/minúsculas según cómo se guardó el filtro)
+    # Iterar en orden inverso de longitud para priorizar filtros más específicos
+    for keyword in reversed(sorted(keywords, key=len)):
+        # Usar word boundaries para evitar coincidencias parciales (ej: 'war' en 'award')
+        pattern = r"(?i)\b" + re.escape(keyword) + r"\b" # (?i) para case-insensitive
+        if re.search(pattern, query_text):
+            # Coincidencia encontrada, obtener datos del filtro
+            reply_text, btn_str, alert_str, fileid = await find_filter(group_id, keyword)
+
+            # Limpiar texto de respuesta
             if reply_text:
                 reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
 
-            if btn is not None:
-                try:
-                    if fileid == "None":
-                        if btn == "[]":
-                            joelkb = await client.send_message(
-                                group_id, 
-                                reply_text, 
-                                disable_web_page_preview=True,
-                                protect_content=True if settings["file_secure"] else False,
-                                reply_to_message_id=reply_id
-                            )
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
+            buttons = None
+            if btn_str and btn_str != "[]":
+                 try: buttons = InlineKeyboardMarkup(eval(btn_str))
+                 except Exception as e: logger.error(f"Error evaluando botones para filtro '{keyword}' en {group_id}: {e}")
 
-                        else:
-                            button = eval(btn)
-                            joelkb = await client.send_message(
-                                group_id,
-                                reply_text,
-                                disable_web_page_preview=True,
-                                reply_markup=InlineKeyboardMarkup(button),
-                                protect_content=True if settings["file_secure"] else False,
-                                reply_to_message_id=reply_id
-                            )
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                    elif btn == "[]":
-                        joelkb = await client.send_cached_media(
-                            group_id,
-                            fileid,
-                            caption=reply_text or "",
-                            protect_content=True if settings["file_secure"] else False,
-                            reply_to_message_id=reply_id
-                        )
-                        try:
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                        except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
-                            await save_group_settings(grpid, 'auto_ffilter', True)
-                            settings = await get_settings(message.chat.id)
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
-                    else:
-                        button = eval(btn)
-                        joelkb = await message.reply_cached_media(
-                            fileid,
-                            caption=reply_text or "",
-                            reply_markup=InlineKeyboardMarkup(button),
-                            reply_to_message_id=reply_id
-                        )
-                        try:
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await asyncio.sleep(600)
-                                        await joelkb.delete()
-                        except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
-                            await save_group_settings(grpid, 'auto_ffilter', True)
-                            settings = await get_settings(message.chat.id)
-                            if settings['auto_ffilter']:
-                                ai_search = True
-                                reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                await auto_filter(client, message.text, message, reply_msg, ai_search)
+            # Enviar la respuesta del filtro
+            sent_filter_msg = None
+            try:
+                if fileid and fileid != "None": # Si hay archivo adjunto
+                     sent_filter_msg = await client.send_cached_media(
+                         chat_id=group_id,
+                         file_id=fileid,
+                         caption=reply_text or "",
+                         reply_markup=buttons,
+                         protect_content=settings.get("file_secure", False),
+                         reply_to_message_id=reply_id
+                    )
+                elif reply_text: # Si solo hay texto (y quizás botones)
+                     sent_filter_msg = await client.send_message(
+                         chat_id=group_id,
+                         text=reply_text,
+                         reply_markup=buttons,
+                         disable_web_page_preview=True,
+                         protect_content=settings.get("file_secure", False), # Proteger texto también?
+                         reply_to_message_id=reply_id
+                    )
+                else:
+                     # Filtro inválido (sin texto ni archivo)? Loggear?
+                     logger.warning(f"Filtro manual '{keyword}' en {group_id} no tiene contenido para enviar.")
+                     continue # Probar siguiente filtro
 
-                except Exception as e:
-                    logger.exception(e)
-                break
-    else:
-        return False
+                # Programar auto-borrado si aplica
+                if settings.get('auto_delete', False) and sent_filter_msg:
+                     await asyncio.sleep(AUTO_DELETE_SECONDS)
+                     try: await sent_filter_msg.delete()
+                     except Exception: pass
 
-async def global_filters(client, message, text=False):
-    settings = await get_settings(message.chat.id)
-    group_id = message.chat.id
-    name = text or message.text
-    reply_id = message.reply_to_message.id if message.reply_to_message else message.id
-    keywords = await get_gfilters('gfilters')
-    for keyword in reversed(sorted(keywords, key=len)):
-        pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
-        if re.search(pattern, name, flags=re.IGNORECASE):
-            reply_text, btn, alert, fileid = await find_gfilter('gfilters', keyword)
+                return True # Filtro manual aplicado, detener búsqueda
 
-            if reply_text:
-                reply_text = reply_text.replace("\\n", "\n").replace("\\t", "\t")
+            except Exception as e:
+                logger.exception(f"Error enviando respuesta de filtro manual '{keyword}' en {group_id}: {e}")
+                # Podría intentar el siguiente filtro o detenerse
+                return False # Detener si falla el envío
 
-            if btn is not None:
-                try:
-                    if fileid == "None":
-                        if btn == "[]":
-                            joelkb = await client.send_message(
-                                group_id, 
-                                reply_text, 
-                                disable_web_page_preview=True,
-                                reply_to_message_id=reply_id
-                            )
-                            manual = await manual_filters(client, message)
-                            if manual == False:
-                                settings = await get_settings(message.chat.id)
-                                try:
-                                    if settings['auto_ffilter']:
-                                        ai_search = True
-                                        reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                        await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                        try:
-                                            if settings['auto_delete']:
-                                                await joelkb.delete()
-                                        except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
-                                            await save_group_settings(grpid, 'auto_delete', True)
-                                            settings = await get_settings(message.chat.id)
-                                            if settings['auto_delete']:
-                                                await joelkb.delete()
-                                    else:
-                                        try:
-                                            if settings['auto_delete']:
-                                                await asyncio.sleep(600)
-                                                await joelkb.delete()
-                                        except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
-                                            await save_group_settings(grpid, 'auto_delete', True)
-                                            settings = await get_settings(message.chat.id)
-                                            if settings['auto_delete']:
-                                                await asyncio.sleep(600)
-                                                await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_ffilter', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_ffilter']:
-                                        ai_search = True
-                                        reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                        await auto_filter(client, message.text, message, reply_msg, ai_search) 
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-
-                        else:
-                            button = eval(btn)
-                            joelkb = await client.send_message(
-                                group_id,
-                                reply_text,
-                                disable_web_page_preview=True,
-                                reply_markup=InlineKeyboardMarkup(button),
-                                reply_to_message_id=reply_id
-                            )
-                            manual = await manual_filters(client, message)
-                            if manual == False:
-                                settings = await get_settings(message.chat.id)
-                                try:
-                                    if settings['auto_ffilter']:
-                                        ai_search = True
-                                        reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                        await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                        try:
-                                            if settings['auto_delete']:
-                                                await joelkb.delete()
-                                        except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
-                                            await save_group_settings(grpid, 'auto_delete', True)
-                                            settings = await get_settings(message.chat.id)
-                                            if settings['auto_delete']:
-                                                await joelkb.delete()
-                                    else:
-                                        try:
-                                            if settings['auto_delete']:
-                                                await asyncio.sleep(600)
-                                                await joelkb.delete()
-                                        except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
-                                            await save_group_settings(grpid, 'auto_delete', True)
-                                            settings = await get_settings(message.chat.id)
-                                            if settings['auto_delete']:
-                                                await asyncio.sleep(600)
-                                                await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_ffilter', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_ffilter']:
-                                        ai_search = True
-                                        reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                        await auto_filter(client, message.text, message, reply_msg, ai_search)
-                            else:
-                                try:
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-                                except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
-                                    await save_group_settings(grpid, 'auto_delete', True)
-                                    settings = await get_settings(message.chat.id)
-                                    if settings['auto_delete']:
-                                        await joelkb.delete()
-
-                    elif btn == "[]":
-                        joelkb = await client.send_cached_media(
-                            group_id,
-                            fileid,
-                            caption=reply_text or "",
-                            reply_to_message_id=reply_id
-                        )
-                        manual = await manual_filters(client, message)
-                        if manual == False:
-                            settings = await get_settings(message.chat.id)
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search) 
-                        else:
-                            try:
-                                if settings['auto_delete']:
-                                    await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_delete', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_delete']:
-                                    await joelkb.delete()
-
-                    else:
-                        button = eval(btn)
-                        joelkb = await message.reply_cached_media(
-                            fileid,
-                            caption=reply_text or "",
-                            reply_markup=InlineKeyboardMarkup(button),
-                            reply_to_message_id=reply_id
-                        )
-                        manual = await manual_filters(client, message)
-                        if manual == False:
-                            settings = await get_settings(message.chat.id)
-                            try:
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                                    try:
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await joelkb.delete()
-                                else:
-                                    try:
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                                    except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
-                                        await save_group_settings(grpid, 'auto_delete', True)
-                                        settings = await get_settings(message.chat.id)
-                                        if settings['auto_delete']:
-                                            await asyncio.sleep(600)
-                                            await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_ffilter', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_ffilter']:
-                                    ai_search = True
-                                    reply_msg = await message.reply_text(f"<b><i>Buscando  {message.text} 🔍</i></b>")
-                                    await auto_filter(client, message.text, message, reply_msg, ai_search)
-                        else:
-                            try:
-                                if settings['auto_delete']:
-                                    await joelkb.delete()
-                            except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
-                                await save_group_settings(grpid, 'auto_delete', True)
-                                settings = await get_settings(message.chat.id)
-                                if settings['auto_delete']:
-                                    await joelkb.delete()
+    return False # No se encontró ninguna coincidencia de filtro manual
 
 
-                except Exception as e:
-                    logger.exception(e)
-                break
-    else:
-        return False
+# async def global_filters(client, message, text=False):
+#     """Busca coincidencias con filtros globales (si está implementado y activado)."""
+#     # Similar a manual_filters pero usando get_gfilters y find_gfilter
+#     # ... (código similar, adaptando llamadas a DB)
+#     # Decidir si los filtros globales se aplican antes o después de los manuales
+#     # Decidir si un filtro global detiene la búsqueda automática
+#     pass # Implementar si es necesario
