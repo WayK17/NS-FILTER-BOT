@@ -5,171 +5,166 @@
 class script(object):
     START_TXT = """<b><blockquote>Hola {} 👋,</blockquote>
 
-Soy un bot de filtrado automático avanzado y poderoso.  
-Puedes usarme en tu grupo.</b>"""
+Soy un bot de filtrado automático avanzado y poderoso.
+Puedes usarme en tu grupo para encontrar archivos fácilmente.</b>"""
 
-    CLONE_START_TXT = """<b><blockquote>Hola {}, mi nombre es <a href=https://t.me/{}>{}</a></blockquote>
+    HELP_TXT = """<b>Hola {} 👋,
+
+Aquí tienes un resumen de las funciones y cómo puedo ayudarte:</b>"""
+
+    ABOUT_TXT = """<b><blockquote>⍟───[ DETALLES DEL BOT ]───⍟</blockquote>
+
+‣ Nombre: <a href="https://t.me/{}">{}</a>
+‣ Desarrollador: <a href="{}">@WayK</a> (Adaptado y Mejorado)
+‣ Librería: <a href='https://docs.pyrogram.org/'>Pyrogram</a>
+‣ Lenguaje: <a href='https://www.python.org/'>Python 3</a>
+‣ Base de Datos: <a href='https://www.mongodb.com/'>MongoDB</a>
+‣ Alojamiento: (Ej: Heroku, VPS, etc. - Especificar si se desea)
+‣ Estado: v3.0.0 [Beta]</b>"""
+
+    SUBSCRIPTION_TXT = """<b>Invita a tus amigos usando tu enlace de referido para obtener acceso Premium gratis por {refer_premium_time}.
+
+🔗 Tu Enlace de Referido: https://t.me/{}?start=REF-{}
+
+Cuando {refer_count} usuarios únicos inicien el bot con tu enlace, ¡se te activará Premium automáticamente!
+
+También puedes consultar nuestros planes pagos con /planes.</b>"""
+
+    MANUELFILTER_TXT = """<b>Ayuda: Filtros Manuales</b>
+
+Los filtros te permiten configurar respuestas automáticas para palabras clave específicas. Cuando alguien mencione esa palabra clave, responderé automáticamente.
+
+<b>Notas Importantes:</b>
+1.  Debo tener permisos de administrador en el grupo.
+2.  Solo los administradores del grupo pueden añadir o gestionar filtros.
+3.  Los botones de alerta tienen un límite de 64 caracteres para su mensaje.
+
+<b>Comandos y Uso:</b>
+•   <code>/filter nombre_filtro respuesta</code> - Añade un nuevo filtro.
+    <i>Ej: /filter hola ¡Hola! ¿Cómo estás?</i>
+•   <code>/filters</code> - Muestra todos los filtros activos en el chat.
+•   <code>/stop nombre_filtro</code> - Elimina un filtro específico.
+    <i>Ej: /stop hola</i>
+•   <code>/stopall</code> - Elimina TODOS los filtros del chat (solo el dueño del grupo o admins del bot)."""
+
+    BUTTON_TXT = """<b>Ayuda: Formato de Botones para Filtros</b>
+
+Puedes añadir botones a tus respuestas de filtros manuales. Soporto botones con enlaces URL y botones que muestran una alerta.
+
+<b>Notas:</b>
+1.  Es necesario incluir texto junto con los botones.
+2.  Puedes usar botones con respuestas de solo texto o con archivos multimedia.
+3.  Usa el formato Markdown correcto para definir los botones.
+
+<b>Botones con Enlace URL:</b>
+<code>[Texto del Botón](buttonurl:https://ejemplo.com)</code>
+<i>Ej: [Visita Nuestra Web](buttonurl:https://miweb.com)</i>
+
+<b>Botones con Mensaje de Alerta:</b>
+<code>[Texto del Botón](buttonalert:Este es el mensaje de alerta)</code>
+<i>Ej: [Mostrar Info](buttonalert:Versión 1.2 del Bot)</i>
+
+<b>Para añadir múltiples botones en la misma línea:</b>
+<code>[Botón 1](buttonurl:enlace1.com) [Botón 2](buttonalert:alerta2:same)</code>
+(Usa <code>:same</code> después de la URL/alerta del segundo botón en adelante en la misma fila)"""
+
+    AUTOFILTER_TXT = """<b>Ayuda: Filtro Automático e Indexación</b>
+
+<b>Indexar Archivos (para que el bot los encuentre):</b>
+1.  Si tu canal de archivos es privado, hazme administrador allí.
+2.  Asegúrate de que el canal no contenga contenido inapropiado.
+3.  Para indexar, usa el comando <code>/index</code> en un grupo donde yo sea admin y esté conectado a tu canal de archivos. (Esta función puede variar según la configuración del bot).
+
+<b>Funcionamiento del Filtro Automático (en grupos):</b>
+1.  Añádeme como administrador a tu grupo.
+2.  Si usas la función de "conexiones", conecta tu grupo a mi chat privado con <code>/connect</code> en el grupo.
+3.  Activa el "Auto-Filtro" en el menú de <code>/settings</code> (accesible desde el grupo si eres admin). Cuando los usuarios escriban nombres de películas o series, buscaré automáticamente en mi base de datos."""
+
+    CONNECTION_TXT = """<b>Ayuda: Conexiones PM-Grupo</b>
+
+Esta función te permite vincular un grupo a tu chat privado conmigo. Así puedes gestionar filtros y configuraciones del grupo desde mi chat privado, evitando llenar el grupo de comandos.
+
+<b>Notas:</b>
+1.  Solo los administradores del grupo pueden crear o gestionar conexiones.
+2.  Para crear una conexión, ve al grupo y usa el comando <code>/connect</code>. Te enviaré un mensaje de confirmación.
+
+<b>Comandos y Uso (generalmente en mi chat privado después de conectar):</b>
+•   <code>/connections</code> - Muestra todos los grupos que has conectado.
+•   <code>/disconnect</code> - Desactiva la conexión activa actual.
+•   <i>(Desde el menú de <code>/connections</code>, puedes activar/desactivar o eliminar conexiones individuales).</i>"""
+
+    ADMIN_TXT = """<b>Ayuda: Comandos de Administración del Bot</b>
+
+Estos comandos son solo para los administradores globales del bot.
+
+•   <code>/stats</code> - Muestra estadísticas del bot (archivos, usuarios, chats).
+•   <code>/broadcast</code> - Envía un mensaje a todos los usuarios del bot.
+•   <code>/gbroadcast</code> - Envía un mensaje a todos los grupos donde está el bot.
+•   <code>/users</code> - Lista los usuarios de la base de datos.
+•   <code>/chats</code> - Lista los chats donde está el bot.
+•   <code>/logs</code> - Muestra los logs recientes del bot.
+•   <code>/leave chat_id</code> - Hace que el bot abandone un chat específico.
+•   <code>/disable chat_id</code> - Deshabilita el bot en un chat específico.
+•   <code>/ban_user user_id</code> - Banea a un usuario del uso del bot.
+•   <code>/unban_user user_id</code> - Desbanea a un usuario.
     
-Soy un bot de filtro automático avanzado y poderoso con increíbles funciones. Solo escribe lo que quieras y mira mi poder 💘</b>"""
+<b>Gestión de Filtros Globales:</b>
+•   <code>/gfilter</code> - Añade un filtro global.
+•   <code>/gfilters</code> - Lista todos los filtros globales.
+•   <code>/stopg nombre_filtro_global</code> - Elimina un filtro global específico.
+•   <code>/stopallg</code> - Elimina todos los filtros globales.
 
-    HELP_TXT = """<b>Hola {}
-Aquí están todas mis funciones útiles.</b>"""
-
-    ABOUT_TXT = """<b><blockquote>⍟───[ MIS DETALLES ]───⍟</blockquote>
-    
-‣ Mi nombre : <a href=https://t.me/{}>{}</a>
-‣ Desarrollador : <a href={}>@WayK</a>
-‣ Librería : <a href='https://docs.pyrogram.org/'>Pyrogram</a>
-‣ Lenguaje : <a href='https://www.python.org/download/releases/3.0/'>Python 3</a>
-‣ Base de datos : <a href='https://www.mongodb.com/'>MongoDB</a>
-‣ Servidor del bot : <a href='https://heroku.com'>Heroku</a>
-‣ Estado de compilación : v2.7.1 [estable]</b>"""
-
-    SUBSCRIPTION_TXT = """
-<b>Refiere tu enlace a tus amigos, familia, canal y grupo para obtener premium gratis para {}
-
-Enlace de referido - https://telegram.me/{}?start=VJ-{}
-
-Si un usuario único {} inicia el bot con tu enlace de referido, se añadirá automáticamente a la lista premium.
-
-Compra plan de pago con - /plan</b>"""
-
-    MANUELFILTER_TXT = """Ayuda: <b>Filtros</b>
-- Filtro es una función donde los usuarios pueden configurar respuestas automatizadas para una palabra clave en particular y yo responderé cada vez que se encuentre esa palabra en el mensaje.
-<b>Nota:</b>
-1. Este bot debe tener privilegios de administrador.
-2. Solo los administradores pueden agregar filtros en un chat.
-3. Los botones de alerta tienen un límite de 64 caracteres.
-Comandos y Uso:
-• /filter - <code>agregar un filtro en un chat</code>
-• /filters - <code>listar todos los filtros de un chat</code>
-• /del - <code>eliminar un filtro específico en un chat</code>
-• /delall - <code>eliminar todos los filtros en un chat (solo el dueño del chat)</code>"""
-
-    BUTTON_TXT = """Ayuda: <b>Botones</b>
-- Este bot soporta botones de URL y botones de alerta en línea.
-<b>Nota:</b>
-1. Telegram no permitirá enviar botones sin contenido, por lo que el contenido es obligatorio.
-2. Este bot soporta botones con cualquier tipo de medio de Telegram.
-3. Los botones deben ser correctamente interpretados en formato markdown.
-<b>Botones URL:</b>
-<code>[Texto del Botón](buttonurl:https://t.me/vjupdates2/3)</code>
-<b>Botones de alerta:</b>
-<code>[Texto del Botón](buttonalert:Esto es un mensaje de alerta)</code>"""
-
-    AUTOFILTER_TXT = """Ayuda: <b>Auto Filtro</b>
-<b>Nota: Índice de archivos</b>
-1. Hazme administrador de tu canal si es privado.
-2. Asegúrate de que tu canal no contenga contenido para adultos, pornografía ni archivos falsos.
-3. Reenvía el último mensaje a mí con comillas. Añadiré todos los archivos de ese canal a mi base de datos.
-
-<b>Nota: AutoFiltro</b>
-1. Agrega el bot como administrador en tu grupo.
-2. Usa /connect y conecta tu grupo al bot.
-3. Usa /settings en el mensaje privado del bot y activa AutoFiltro en el menú de configuración."""
-
-    CONNECTION_TXT = """Ayuda: <b>Conexiones</b>
-- Se utiliza para conectar el bot al mensaje privado para gestionar filtros 
-- Ayuda a evitar el spam en los grupos.
-<b>Nota:</b>
-1. Solo los administradores pueden añadir una conexión.
-2. Envía <code>/connect</code> para conectar conmigo en tu mensaje privado.
-Comandos y Uso:
-• /connect  - <code>conectar un chat en particular a tu mensaje privado</code>
-• /disconnect  - <code>desconectar de un chat</code>
-• /connections - <code>listar todas tus conexiones</code>"""
-
-    EXTRAMOD_TXT = """Ayuda: <b>Módulos Extra</b>
-<b>Nota:</b>
- <b>✯ Mantenido por : <a href={}>Elaina</a></b>
-  
- <b>✯ Únete aquí : <a href={}>https://t.me/NessCloud</a></b>
-  
- ./id - <code>obtener el ID de un usuario especificado.</code>
-  
- ./info  - <code>obtener información sobre un usuario.</code>
-  
- ./song - Descargar cualquier canción [<code>ejemplo /song vaa vaathi song</code>]
-  
- ./telegraph - <code>Generador de Telegraph para enviar video o foto menores a 5MB; te doy el enlace de Telegraph</code>
-  
- ./tts - <code>Este comando convierte texto a voz</code>
-  
- ./video - Este comando descarga cualquier video de YouTube en HD [<code>ejemplo /video https://youtu.be/example...</code>]
-
-./font - Este comando genera fuentes elegantes y modernas [<code>ejemplo /font hi</code>]"""
-
-    ADMIN_TXT = """Ayuda: Módulos de Admin
-<b>Nota:</b>
-Este módulo solo funciona para mis administradores
-Comandos y Uso:
-• /logs - <code>para obtener los errores recientes</code>
-• /stats - <code>para obtener el estado de archivos en la base de datos. [Este comando puede ser usado por cualquiera]</code>
-• /delete - <code>para eliminar un archivo específico de la base de datos.</code>
-• /users - <code>para obtener la lista de mis usuarios e IDs.</code>
-• /chats - <code>para obtener la lista de mis chats e IDs</code>
-• /leave  - <code>para salir de un chat.</code>
-• /disable  -  <code>para deshabilitar un chat.</code>
-• /ban  - <code>para banear a un usuario.</code>
-• /unban  - <code>para desbanear a un usuario.</code>
-• /channel - <code>para obtener la lista de todos los canales conectados</code>
-• /broadcast - <code>para difundir un mensaje a todos los usuarios</code>
-• /grp_broadcast - <code>para difundir un mensaje a todos los grupos conectados.</code>
-• /gfilter - <code>para agregar filtros globales</code>
-• /gfilters - <code>para ver la lista de todos los filtros globales</code>
-• /delg - <code>para eliminar un filtro global específico</code>
-• /request - <code>para enviar una solicitud de película/series a los administradores del bot. Solo funciona en el grupo de soporte. [Este comando puede ser usado por cualquiera]</code>
-• /delallg - <code>para eliminar todos los filtros globales de la base de datos del bot.</code>
-• /deletefiles - <code>para eliminar archivos de CamRɪᴘ y PreDVD de la base de datos del bot.</code>"""
-
-    SEC_STATUS_TXT = """<b>★ Total de Usuarios: <code>{}</code>
-★ Total de Chats: <code>{}</code>
-★ Total de Archivos: <code>{}</code>
+<b>Gestión de Archivos (Base de Datos):</b>
+•   <code>/delete file_id_o_unique_id</code> - Elimina un archivo específico de la base de datos.
+•   <code>/deletefiles query_keyword</code> - Elimina archivos que coincidan con una palabra clave (ej. 'CAMRip').
+"""
+    # Mantenido SEC_STATUS_TXT con su nombre original
+    SEC_STATUS_TXT = """<b>★ Usuarios Totales: <code>{}</code>
+★ Chats Totales: <code>{}</code>
+★ Archivos Totales: <code>{}</code>
 ★ Almacenamiento Usado: <code>{} MB</code>
-★ Almacenamiento Gratis: <code>{} MB</code></b>"""
+★ Almacenamiento Libre: <code>{} MB</code></b>""" # Traducción ligera y "Gratis" a "Libre"
 
-    STATUS_TXT = """<b>Total de Archivos de Todas las Bases de Datos: <code>{}</code>
+    STATUS_TXT = """<b>Archivos Totales en Todas las Bases de Datos: <code>{}</code>
 
 BASE DE USUARIOS :-
-★ Total de Usuarios: <code>{}</code>
-★ Total de Chats: <code>{}</code>
+★ Usuarios Totales: <code>{}</code>
+★ Chats Totales: <code>{}</code>
 
 PRIMERA BASE DE ARCHIVOS :-
-★ Total de Archivos: <code>{}</code>
+★ Archivos Totales: <code>{}</code>
 ★ Almacenamiento Usado: <code>{} MB</code>
-★ Almacenamiento Gratis: <code>{} MB</code>
+★ Almacenamiento Libre: <code>{} MB</code>
 
 SEGUNDA BASE DE ARCHIVOS :-
-★ Total de Archivos: <code>{}</code>
+★ Archivos Totales: <code>{}</code>
 ★ Almacenamiento Usado: <code>{} MB</code>
-★ Almacenamiento Gratis: <code>{} MB</code>
+★ Almacenamiento Libre: <code>{} MB</code>
 
 OTRA BASE DE DATOS :-
 ★ Almacenamiento Usado: <code>{} MB</code>
-★ Almacenamiento Gratis: <code>{} MB</code></b>"""
+★ Almacenamiento Libre: <code>{} MB</code></b>""" # Traducción ligera
 
     LOG_TEXT_G = """#NuevoGrupo
-Grupo = {} (<code>{}</code>)
-Total de Miembros = <code>{}</code>
-Añadido por - {}"""
+Nombre: {} (<code>{}</code>)
+Total de Miembros: <code>{}</code>
+Añadido por: {}"""
 
     LOG_TEXT_P = """#NuevoUsuario
-ID - <code>{}</code>
-Nombre - {}"""
+ID: <code>{}</code>
+Nombre: {}"""
 
-    ALRT_TXT = """<b>Hᴏʟᴀ {}</b>,  
+    ALRT_TXT = """<b>Hola {}</b> 👋,  
 
-Eѕᴛᴏ ɴᴏ ᴇs ᴛᴜ ѕᴏʟɪᴄɪᴛᴜᴅ ᴅᴇ ᴘᴇʟíᴄᴜʟᴀ.  
-Por favor, solicita la tuya. 😊"""
+Estos botones son para el usuario que hizo la solicitud original. Por favor, realiza tu propia búsqueda. 😊"""
 
-    OLD_ALRT_TXT = """<b>Hey {}</b>,  
+    OLD_ALRT_TXT = """<b>¡Oye {}</b>! 👋,  
 
-Estás usando uno de mis mensajes antiguos.  
-Por favor, envía la solicitud de nuevo. 😊"""
+Parece que estás interactuando con un mensaje de búsqueda antiguo cuyos datos han expirado. Por favor, realiza la búsqueda de nuevo. 😊"""
 
-    CUDNT_FND = """<b>❌ No pude encontrar nada relacionado con <code>{}</code>.</b>
+    CUDNT_FND = """<b>🤔 No pude encontrar nada relacionado con "<code>{}</code>".</b>
 
-¿Querías decir alguno de estos?"""
+¿Quizás quisiste decir alguna de estas opciones?"""
 
     I_CUDNT = """<b>😔 Lo siento, no se encontraron archivos para tu solicitud: <code>{}</code></b>
 
@@ -184,46 +179,44 @@ Por favor, revisa la ortografía o prueba con diferentes términos.
 <b>🚫 Por favor, evita usar caracteres especiales como:</b>
 <blockquote><code>:(!,./</code></blockquote>"""
 
-    I_CUD_NT = """<b>🔍 No pude encontrar ninguna película relacionada con <code>{}</code>.</b>
+    MVE_NT_FND = """⚠️ <b>Película o serie no encontrada en la base de datos.</b>"""
 
-Por favor, revisa la ortografía en Google o IMDB y vuelve a intentarlo."""
+    TOP_ALRT_MSG = """🔎 <b>Buscando tu solicitud en la base de datos... ¡Un momento!</b>"""
 
-    MVE_NT_FND = """⚠️ <b>Película/serie no encontrada en la base de datos.</b>"""
+    MELCOW_ENG = """<b>¡Hola {}! 😍 Bienvenido/a al grupo {}. ¡Esperamos que disfrutes tu estadía! ❤️</b>"""
 
-    TOP_ALRT_MSG = """🔎 <b>Buscando película/serie en la base de datos...</b>"""
+    SHORTLINK_INFO = """ℹ️ <b>Información sobre Acortadores</b>
 
-    MELCOW_ENG = """<b>Hola {} 😍, y bienvenido al grupo {} ❤️</b>"""
+Cuando esta función está activada por el administrador y no eres usuario Premium, algunos enlaces de descarga pueden pasar primero por un acortador de URL. Esto ayuda a mantener el bot.
 
-    SHORTLINK_INFO = """
-
-🫵 No hay nada de Información"""
+Los usuarios Premium siempre reciben enlaces directos. ✨"""
 
     REQINFO = """
-⚠ INFORMACIÓN ⚠
+⚠️ <b>INFORMACIÓN IMPORTANTE</b> ⚠️
 
-Después de 5 Minutos Este Mensaje Se Eliminará Automáticamente.
+Este mensaje de resultados se eliminará automáticamente después de 5 minutos.
 
-Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""  # ✅ Correcto
+Si no ves el archivo que buscas en esta página, y hay más resultados, usa los botones de paginación (⬅️ Siguiente / Anterior ➡️) para ver más.
+"""
 
-    SELECT = """SELECCIONA tu idioma preferido, calidad, temporada y episodio"""
+    SELECT = """Por favor, selecciona tu idioma, calidad, temporada o episodio deseado si la búsqueda ofrece múltiples opciones."""
 
     SINFO = """
-🫣 Para la película, únete primero y luego haz clic en el botón "Inténtalo de nuevo" 😅"""
+🤔 Para obtener este archivo, primero debes unirte al canal de actualización (si se requiere) y luego reintentar.
+Si el problema persiste, contacta al administrador."""
 
     NORSLTS = """ 
-★ #SIN RESULTADOS ★
+★ #SIN_RESULTADOS ★
 
-ID <b>: {}</b>
-
-Nombre <b>: {}</b>
-
-Mensaje <b>: {}</b>"""
+ID Usuario: <code>{}</code>
+Nombre Usuario: {}
+Búsqueda: "<code>{}</code>"
+"""
 
     CAPTION = """<b>📂 Archivo:</b> <code>{file_name}</code>
+<b>⚖️ Tamaño:</b> <code>{file_size}</code>
 
-<b>⚙️ Tamaño:</b> <code>{file_size}</code>
-
-<a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>"""
+<i><a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a></i>"""
 
     IMDB_TEMPLATE_TXT = """
 ✨ <b>¡Información Encontrada!</b> ✨
@@ -249,265 +242,53 @@ Mensaje <b>: {}</b>"""
 
 🔎 <i>Búsqueda original: {qurey}</i>
 
-⏱️ <i>Respuesta en {remaining_seconds} segundos.</i>
-👤 Solicitado por: {message.from_user.mention}
- """
+⏱️ <i>Respuesta en {search_time} segundos.</i>
+👤 Solicitado por: {requester}
+"""
 
-    ALL_FILTERS = """
-<b>Hola {}, estos son mis tres tipos de filtros.</b>"""
+    ALL_FILTERS = """<b>Hola {} 👋,
 
-    GFILTER_TXT = """
-<b>Bienvenido a los Filtros Globales. Los filtros globales son aquellos establecidos por los administradores del bot que funcionarán en todos los grupos.</b>
-    
-Comandos disponibles:
-• /gfilter - <code>Para crear un filtro global.</code>
-• /gfilters - <code>Para ver todos los filtros globales.</code>
-• /delg - <code>Para eliminar un filtro global en particular.</code>
-• /delallg - <code>Para eliminar todos los filtros globales.</code>"""
+Puedes configurar filtros manuales para respuestas automáticas.
+Usa los botones de abajo para aprender cómo darles formato.</b>"""
 
-    FILE_STORE_TXT = """
-<b>El Almacenamiento de Archivos es la función que creará un enlace compartible para un solo archivo o múltiples archivos.</b>
+    GFILTER_TXT = """<b>Filtros Globales</b>
 
-Comandos disponibles:
-• /batch - <code>Para crear un enlace de lote de múltiples archivos.</code>
-• /link - <code>Para crear un enlace de almacenamiento para un solo archivo.</code>
-• /pbatch - <code>Similar a /batch, pero los archivos se enviarán con restricciones de reenvío.</code>
-• /plink - <code>Similar a /link, pero el archivo se enviará con restricciones de reenvío.</code>"""
+Los filtros globales son definidos por los administradores del bot y funcionan en todos los grupos donde el bot está presente.
 
-    SONG_TXT = """<b>Módulo de Descarga de Canciones</b> 
-      
-<b>Módulo de descarga de canciones, para aquellos que aman la música. Puedes usar esta función para descargar cualquier canción a súper velocidad. Funciona solo en bot y grupos...</b> 
-  
-<b>Comandos</b>: <b>𝄟⃝.  /song nombre de la canción</b>"""
+<b>Comandos (Solo Admins del Bot):</b>
+•   <code>/gfilter nombre respuesta</code> - Añade un filtro global.
+•   <code>/gfilters</code> - Lista todos los filtros globales.
+•   <code>/stopg nombre</code> - Elimina un filtro global.
+•   <code>/stopallg</code> - Elimina todos los filtros globales."""
 
-    YTDL_TXT = """<b>Ayuda para descargar videos desde YouTube. 
+    STICKER_TXT = """<b>Obtener ID de un Sticker</b>
 
-Uso: Puedes descargar cualquier video desde YouTube.
-  
-Cómo usar: escribe - /video o /mp4
-  
-Ejemplo: <code>/mp4 https://youtu.be/example...</code></b>"""
+Para obtener el ID único de un sticker, simplemente responde al sticker con el comando:
+<code>/stickerid</code>
+O envía el sticker y luego usa <code>/stickerid</code> respondiendo a tu propio mensaje con el sticker."""
 
-    TTS_TXT = """<b>Módulo TTS 🎤: Convierte texto a voz.
+    # Mantenido FONT_TXT
+    FONT_TXT = """<b>Uso:</b>
+Puedes usar este módulo para cambiar el estilo de la fuente.
   
-Comandos y uso: /tts</b>"""
-
-    GTRANS_TXT = """<b>Ayuda: Traductor de Google
-  
-Este comando te ayuda a traducir un texto a cualquier idioma que desees. Funciona tanto en mensajes privados como en grupos.
-  
-Comandos y uso: /tr - para traducir textos a un idioma específico.
-  
-Nota: al usar /tr, debes especificar el código del idioma.
-  
-Ejemplo: /tr ml 
- • en = inglés 
- • ml = malayalam 
- • hi = hindi</b>"""
-
-    TELE_TXT = """<b>Ayuda: Módulo Telegraph de Telegram
-  
-Uso: /telegraph - Envíame una imagen o video (menos de 5MB)
-  
-Nota:
-Este comando está disponible en grupos y mensajes privados.
-Puede ser usado por cualquier persona</b>"""
-
-    CORONA_TXT = """<b>Ayuda: Covid
-  
-Este comando te ayuda a obtener información diaria sobre el Covid.
-  
-Comandos y uso: 
- /covid - Usa este comando seguido del nombre de tu país para obtener información sobre Covid.
- Ejemplo: <code>/covid India</code>
-  
-⚠️ Este servicio ha sido detenido.
-  
-</b>"""
+<b>Comando:</b> <code>/font tu texto</code> (el texto es opcional, si no se provee, se usará el texto al que respondes)
+<b>Ejemplo:</b> <code>/font Hola Mundo</code>
+""" # Traducido y clarificado
 
     PROGRESS_BAR = """\n
-╭━━━━❰ Renombrando Archivo... ❱━➣
+╭━━━━❰ Procesando... ❱━➣
 ┣⪼ 🗂️ : {1} | {2}
 ┣⪼ ⏳️ : {0}%
 ┣⪼ 🚀 : {3}/s
 ┣⪼ ⏱️ : {4}
 ╰━━━━━━━━━━━━━━━➣ """
 
-    ABOOK_TXT = """<b>Ayuda: Audiolibro
-  
-Puedes convertir un archivo PDF a un archivo de audio usando este comando ✯ 
-  
-Comandos y uso: 
-/audiobook: Responde a este comando en cualquier PDF para generar el audio
-</b>"""
-
-    PINGS_TXT = """<b>Prueba de Ping: te ayuda a conocer tu ping 🪄 
-  
-Comandos: 
- • /alive - para verificar que estás activo. 
- • /help - para obtener ayuda. 
- • /ping - para obtener tu ping.
-  
-Uso: 
- • Estos comandos pueden usarse en mensajes privados y en grupos.
- • Estos comandos pueden ser usados por cualquiera en grupos y en mensajes privados.
- • Comparte con nosotros para más funciones
-</b>"""
-
-    STICKER_TXT = """<b>Puedes usar este módulo para encontrar cualquier ID de sticker.
-  
-Uso: para obtener el ID del sticker, simplemente escribe: /stickerid
-</b>"""
-
-    FONT_TXT = """<b>Uso:
-Puedes usar este módulo para cambiar el estilo de la fuente.
-  
-Comando: /font tu texto (opcional)
-Ejemplo: /font hola
-</b>"""
-
-    PURGE_TXT = """<b>Purgar
-
-Elimina muchos mensajes de los grupos!
-(Administrador)
-
-◉ /purge: elimina todos los mensajes desde el mensaje al que respondes hasta el mensaje actual.</b>"""
-
-    WHOIS_TXT = """<b>Módulo Whois
-
-Nota: Proporciona detalles de un usuario.
-Uso: /whois para obtener detalles completos de un usuario 📑
-</b>"""
-
-    JSON_TXT = """<b>
-JSON:
-El bot devuelve JSON para todos los mensajes respondidos con /json.
-
-Funciones:
-
-- Edición de mensajes en JSON
-- Soporte en mensajes privados
-- Soporte en grupos
-
-Nota:
-
-Todos pueden usar este comando; si se produce spam, el bot te baneará automáticamente del grupo.
-</b>"""
-
-    URLSHORT_TXT = """<b>Ayuda: Acortador de URL
-  
-<i><b>Este comando te ayuda a acortar URLs.</b></i>
-  
-Comandos y uso:
-  
-/short: <b>Usa este comando con tu enlace para obtener un enlace corto.</b>
-Ejemplo: <code>/short https://youtu.be/example...</code>
-</b>"""
-
-    CARB_TXT = """<b>Ayuda para Carbon
-
-Carbon es una función que hace que la imagen se muestre en la parte superior con tus textos.
-Para usar este módulo, simplemente envía el texto y ejecútalo con el comando /carbon; el bot responderá con la imagen de Carbon.
-</b>"""
-
-    GEN_PASS = """<b>Ayuda: Generador de Contraseñas
-  
-No hay nada más que saber. Envíame el límite de tu contraseña.
-- Te proporcionaré una contraseña con ese límite.
-  
-Comandos y uso: 
-• /genpassword o /genpw 20
-  
-NOTA: 
-• Solo se permiten dígitos.
-• El máximo permitido es hasta 64.
-  (No puedo generar contraseñas de longitud superior a 64)
-• IMDb debe tener privilegios de administrador.
-• Estos comandos funcionan tanto en mensajes privados como en grupos.
-• Estos comandos pueden ser usados por cualquier miembro de grupo.</b>"""
-
-    SHARE_TXT = """<b>Obtén tu URL para compartir texto.
-  
-Ejemplo: /share
-</b>"""
-
-    PIN_TXT = """<b>Módulo de Fijación
-  
-Fija un mensaje...
-Todos los comandos relacionados con fijar mensajes se pueden encontrar aquí:
-  
-📌 Comandos y uso 📌 
-  
-/pin : para fijar el mensaje en tus chats 
-/unpin : para quitar la fijación del mensaje actual</b>"""
-
+    # Mantenido RESTART_TXT
     RESTART_TXT = """
-<b>¡El bot se ha reiniciado!
+<b>✅ ¡Bot Reiniciado Exitosamente! ✅</b>
 
-📅 | Fecha: <code>{}</code>
-⏰ | Hora <code>{}</code>
-🌐 | Zona horaria: <code>Asia/Kolkata</code>
-🛠️ | Estado de compilación: <code>v2.7.1 [Estable]</code></b>"""
-
-    LOGO = """
-████████╗███████╗███████╗██╗  ██╗    ╔██        ██╗       ██╗
-╚═ ██╔══╝██╔════╝██╔════╝██║  ██║     ║██      ██║        ██║
-   ██║    █████╗  ██║      ███████║      ║██    ██║         ██║
-   ██║    ██╔══╝  ██║      ██╔══██║       ║██  ██║  ╔██     ██║
-   ██║    ███████╗███████╗██║  ██║        ║████║   ║████████║
-   ╚═╝    ╚══════╝╚══════╝╚═╝  ╚═╝        ╚════╝   ╚════════╝"""
-
-    TAMIL_INFO = """
--_- """
-
-    ENGLISH_INFO = """
--_- """
-
-    TELUGU_INFO = """
-     -_- """
-
-    HINDI_INFO = """
-     -_- """
-
-    MALAYALAM_INFO = """
-"""
-
-    URTU_INFO = """
-     -_- """
-
-    GUJARATI_INFO = """
- -_- """
-
-    KANNADA_INFO = """
- -_- ."""
-
-    BANGLADESH_INFO = """
- -_- """
-
-    RENAME_TXT = """
-🌌 <b><u>CÓMO CONFIGURAR LA MINIATURA</u></b>
-  
-•> /set_thumb - envía cualquier imagen para configurar automáticamente la miniatura.
-•> /del_thumb - usa este comando para eliminar tu miniatura anterior.
-•> /view_thumb - usa este comando para ver tu miniatura actual.
-
-📑 <b><u>CÓMO CONFIGURAR CAPTION PERSONALIZADA</u></b>
-
-•> /set_caption - establecer caption personalizada
-•> /see_caption - visualiza tu caption personalizada
-•> /del_caption - eliminar caption personalizada
-
-Ejemplo:- /set_caption 📕 Nombre del Archivo: {filename}
-💾 Tamaño: {filesize}
-⏰ Duración: {duration}
-
-✏️ <b><u>CÓMO RENOMBRAR UN ARCHIVO</u></b>
-
-•> /rename - envía cualquier archivo, haz clic en la opción de renombrar, escribe el nuevo nombre del archivo y
-luego selecciona [ documento, video, audio ] 👈 elige esta opción.
-"""
-
-
-# Don't Remove Credit @VJ_Botz
-# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
-# Ask Doubt on telegram @KingVJ01
+📅 Fecha: <code>{}</code>
+⏰ Hora: <code>{}</code>
+🌐 Zona Horaria: <code>Asia/Kolkata</code> (Ajusta si es diferente)
+🛠️ Estado de Compilación: <code>v3.0.0 [Beta]</code> (Actualiza versión)
+""" # Traducido y con placeholders para personalización
