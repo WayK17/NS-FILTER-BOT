@@ -3,17 +3,16 @@
 # Ask Doubt on telegram @KingVJ01
 
 class script(object):
-    START_TXT = """<b><blockquote>Hola {} 👋,</blockquote>
+    START_TXT = """<b>👋 ¡Hola {}!</b>
 
-Soy un bot de filtrado automático avanzado y poderoso.  
-Puedes usarme en tu grupo.</b>"""
+<i>Soy un bot de filtrado automático avanzado que te ayudará a encontrar archivos rápidamente.</i>
 
-    CLONE_START_TXT = """<b><blockquote>Hola {}, mi nombre es <a href=https://t.me/{}>{}</a></blockquote>
+<blockquote>Simplemente escribe el nombre de lo que buscas en el chat y te mostraré los resultados disponibles.</blockquote>"""
+
+
     
-Soy un bot de filtro automático avanzado y poderoso con increíbles funciones. Solo escribe lo que quieras y mira mi poder 💘</b>"""
-
     HELP_TXT = """<b>Hola {}
-Aquí están todas mis funciones útiles.</b>"""
+Aquí están mis funciones principales:</b>"""
 
     ABOUT_TXT = """<b><blockquote>⍟───[ MIS DETALLES ]───⍟</blockquote>
     
@@ -24,6 +23,10 @@ Aquí están todas mis funciones útiles.</b>"""
 ‣ Base de datos : <a href='https://www.mongodb.com/'>MongoDB</a>
 ‣ Servidor del bot : <a href='https://heroku.com'>Heroku</a>
 ‣ Estado de compilación : v2.7.1 [estable]</b>"""
+
+
+
+
 
     SUBSCRIPTION_TXT = """
 <b>Refiere tu enlace a tus amigos, familia, canal y grupo para obtener premium gratis para {}
@@ -45,6 +48,10 @@ Comandos y Uso:
 • /filters - <code>listar todos los filtros de un chat</code>
 • /del - <code>eliminar un filtro específico en un chat</code>
 • /delall - <code>eliminar todos los filtros en un chat (solo el dueño del chat)</code>"""
+
+    # Don't Remove Credit @VJ_Botz
+# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
+# Ask Doubt on telegram @KingVJ01
 
     BUTTON_TXT = """Ayuda: <b>Botones</b>
 - Este bot soporta botones de URL y botones de alerta en línea.
@@ -79,25 +86,31 @@ Comandos y Uso:
 • /disconnect  - <code>desconectar de un chat</code>
 • /connections - <code>listar todas tus conexiones</code>"""
 
-    EXTRAMOD_TXT = """Ayuda: <b>Módulos Extra</b>
-<b>Nota:</b>
- <b>✯ Mantenido por : <a href={}>Elaina</a></b>
-  
- <b>✯ Únete aquí : <a href={}>https://t.me/NessCloud</a></b>
-  
- ./id - <code>obtener el ID de un usuario especificado.</code>
-  
- ./info  - <code>obtener información sobre un usuario.</code>
-  
- ./song - Descargar cualquier canción [<code>ejemplo /song vaa vaathi song</code>]
-  
- ./telegraph - <code>Generador de Telegraph para enviar video o foto menores a 5MB; te doy el enlace de Telegraph</code>
-  
- ./tts - <code>Este comando convierte texto a voz</code>
-  
- ./video - Este comando descarga cualquier video de YouTube en HD [<code>ejemplo /video https://youtu.be/example...</code>]
+    # Don't Remove Credit @VJ_Botz
+# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
+# Ask Doubt on telegram @KingVJ01
 
-./font - Este comando genera fuentes elegantes y modernas [<code>ejemplo /font hi</code>]"""
+    EXTRAMOD_TXT = """ʜᴇʟᴘ: Exᴛʀᴀ Mᴏᴅᴜʟᴇs
+<b>ɴᴏᴛᴇ:</b>
+ <b>✯ Maintained by : <a href={}>Owner</a></b>
+  
+ <b>✯ Join here : <a href={}>Update Channel</a></b> 
+  
+ ./id - <code>ɢᴇᴛ ɪᴅ ᴏꜰ ᴀ ꜱᴘᴇᴄɪꜰɪᴇᴅ ᴜꜱᴇʀ.</ 
+ code> 
+  
+ ./info  - <code>ɢᴇᴛ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ.</code> 
+  
+ ./song - Download any song [<code>example /song vaa vaathi song</code>] 
+  
+ ./telegraph - <code>Telegraph generator sen under 5MB video or photo I give telegraph link</code> 
+  
+ ./tts - <code>This command usage text to voice converter</code> 
+  
+ ./video - This command usage any YouTube video download hd [<code>example /video https://youtu.be/example...</code>]
+
+./font - This command usage stylish and cool font generator [<code>example /font hi</code>]"""
+
 
     ADMIN_TXT = """Ayuda: Módulos de Admin
 <b>Nota:</b>
@@ -127,7 +140,7 @@ Comandos y Uso:
 ★ Total de Archivos: <code>{}</code>
 ★ Almacenamiento Usado: <code>{} MB</code>
 ★ Almacenamiento Gratis: <code>{} MB</code></b>"""
-
+    
     STATUS_TXT = """<b>Total de Archivos de Todas las Bases de Datos: <code>{}</code>
 
 BASE DE USUARIOS :-
@@ -147,7 +160,7 @@ SEGUNDA BASE DE ARCHIVOS :-
 OTRA BASE DE DATOS :-
 ★ Almacenamiento Usado: <code>{} MB</code>
 ★ Almacenamiento Gratis: <code>{} MB</code></b>"""
-
+    
     LOG_TEXT_G = """#NuevoGrupo
 Grupo = {} (<code>{}</code>)
 Total de Miembros = <code>{}</code>
@@ -157,12 +170,12 @@ Añadido por - {}"""
 ID - <code>{}</code>
 Nombre - {}"""
 
-    ALRT_TXT = """<b>Hᴏʟᴀ {}</b>,  
+    ALRT_TXT = """👋 Hola {},
 
-Eѕᴛᴏ ɴᴏ ᴇs ᴛᴜ ѕᴏʟɪᴄɪᴛᴜᴅ ᴅᴇ ᴘᴇʟíᴄᴜʟᴀ.  
-Por favor, solicita la tuya. 😊"""
+Esta no es tu solicitud.
+Realiza tu propia búsqueda."""
 
-    OLD_ALRT_TXT = """<b>Hey {}</b>,  
+    OLD_ALRT_TXT = """Hey {},  
 
 Estás usando uno de mis mensajes antiguos.  
 Por favor, envía la solicitud de nuevo. 😊"""
@@ -176,10 +189,10 @@ Por favor, envía la solicitud de nuevo. 😊"""
 Por favor, revisa la ortografía o prueba con diferentes términos.
 
 <b>📽️ Formato para solicitar películas:</b>
-<blockquote><code>Uncharted</code>, <code>Uncharted 2022</code>, <code>Uncharted En</code></blockquote>
+<blockquote><code>Uncharted</code>, <code>Uncharted 2022</code>, <code>Mufasa</code></blockquote>
 
 <b>📺 Formato para solicitar series:</b>
-<blockquote><code>Loki S01</code>, <code>Loki S01E04</code>, <code>Lucifer S03E24</code></blockquote>
+<blockquote><code>Loki S01</code>, <code>Loki</code>, <code>Suits</code></blockquote>
 
 <b>🚫 Por favor, evita usar caracteres especiales como:</b>
 <blockquote><code>:(!,./</code></blockquote>"""
@@ -196,14 +209,14 @@ Por favor, revisa la ortografía en Google o IMDB y vuelve a intentarlo."""
 
     SHORTLINK_INFO = """
 
-🫵 No hay nada de Información"""
+🫵 Select Your Language And Earn Money 💰"""
 
     REQINFO = """
 ⚠ INFORMACIÓN ⚠
 
 Después de 5 Minutos Este Mensaje Se Eliminará Automáticamente.
 
-Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""  # ✅ Correcto
+Si no ves el archivo de película/serie solicitado, revisa la siguiente página"""
 
     SELECT = """SELECCIONA tu idioma preferido, calidad, temporada y episodio"""
 
@@ -223,7 +236,7 @@ Mensaje <b>: {}</b>"""
 
 <b>⚙️ Tamaño:</b> <code>{file_size}</code>
 
-<a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>"""
+<a href="https://t.me/NessCloud">「Nᴇss Cʟᴏᴜᴅ」</a>""" 
 
     IMDB_TEMPLATE_TXT = """
 ✨ <b>¡Información Encontrada!</b> ✨
@@ -252,10 +265,10 @@ Mensaje <b>: {}</b>"""
 ⏱️ <i>Respuesta en {remaining_seconds} segundos.</i>
 👤 Solicitado por: {message.from_user.mention}
  """
-
+    
     ALL_FILTERS = """
 <b>Hola {}, estos son mis tres tipos de filtros.</b>"""
-
+    
     GFILTER_TXT = """
 <b>Bienvenido a los Filtros Globales. Los filtros globales son aquellos establecidos por los administradores del bot que funcionarán en todos los grupos.</b>
     
@@ -264,7 +277,7 @@ Comandos disponibles:
 • /gfilters - <code>Para ver todos los filtros globales.</code>
 • /delg - <code>Para eliminar un filtro global en particular.</code>
 • /delallg - <code>Para eliminar todos los filtros globales.</code>"""
-
+    
     FILE_STORE_TXT = """
 <b>El Almacenamiento de Archivos es la función que creará un enlace compartible para un solo archivo o múltiples archivos.</b>
 
@@ -274,56 +287,7 @@ Comandos disponibles:
 • /pbatch - <code>Similar a /batch, pero los archivos se enviarán con restricciones de reenvío.</code>
 • /plink - <code>Similar a /link, pero el archivo se enviará con restricciones de reenvío.</code>"""
 
-    SONG_TXT = """<b>Módulo de Descarga de Canciones</b> 
-      
-<b>Módulo de descarga de canciones, para aquellos que aman la música. Puedes usar esta función para descargar cualquier canción a súper velocidad. Funciona solo en bot y grupos...</b> 
-  
-<b>Comandos</b>: <b>𝄟⃝.  /song nombre de la canción</b>"""
 
-    YTDL_TXT = """<b>Ayuda para descargar videos desde YouTube. 
-
-Uso: Puedes descargar cualquier video desde YouTube.
-  
-Cómo usar: escribe - /video o /mp4
-  
-Ejemplo: <code>/mp4 https://youtu.be/example...</code></b>"""
-
-    TTS_TXT = """<b>Módulo TTS 🎤: Convierte texto a voz.
-  
-Comandos y uso: /tts</b>"""
-
-    GTRANS_TXT = """<b>Ayuda: Traductor de Google
-  
-Este comando te ayuda a traducir un texto a cualquier idioma que desees. Funciona tanto en mensajes privados como en grupos.
-  
-Comandos y uso: /tr - para traducir textos a un idioma específico.
-  
-Nota: al usar /tr, debes especificar el código del idioma.
-  
-Ejemplo: /tr ml 
- • en = inglés 
- • ml = malayalam 
- • hi = hindi</b>"""
-
-    TELE_TXT = """<b>Ayuda: Módulo Telegraph de Telegram
-  
-Uso: /telegraph - Envíame una imagen o video (menos de 5MB)
-  
-Nota:
-Este comando está disponible en grupos y mensajes privados.
-Puede ser usado por cualquier persona</b>"""
-
-    CORONA_TXT = """<b>Ayuda: Covid
-  
-Este comando te ayuda a obtener información diaria sobre el Covid.
-  
-Comandos y uso: 
- /covid - Usa este comando seguido del nombre de tu país para obtener información sobre Covid.
- Ejemplo: <code>/covid India</code>
-  
-⚠️ Este servicio ha sido detenido.
-  
-</b>"""
 
     PROGRESS_BAR = """\n
 ╭━━━━❰ Renombrando Archivo... ❱━➣
@@ -332,115 +296,33 @@ Comandos y uso:
 ┣⪼ 🚀 : {3}/s
 ┣⪼ ⏱️ : {4}
 ╰━━━━━━━━━━━━━━━➣ """
+  
 
-    ABOOK_TXT = """<b>Ayuda: Audiolibro
   
-Puedes convertir un archivo PDF a un archivo de audio usando este comando ✯ 
-  
-Comandos y uso: 
-/audiobook: Responde a este comando en cualquier PDF para generar el audio
-</b>"""
-
-    PINGS_TXT = """<b>Prueba de Ping: te ayuda a conocer tu ping 🪄 
-  
-Comandos: 
- • /alive - para verificar que estás activo. 
- • /help - para obtener ayuda. 
- • /ping - para obtener tu ping.
-  
-Uso: 
- • Estos comandos pueden usarse en mensajes privados y en grupos.
- • Estos comandos pueden ser usados por cualquiera en grupos y en mensajes privados.
- • Comparte con nosotros para más funciones
-</b>"""
-
     STICKER_TXT = """<b>Puedes usar este módulo para encontrar cualquier ID de sticker.
   
 Uso: para obtener el ID del sticker, simplemente escribe: /stickerid
-</b>"""
-
-    FONT_TXT = """<b>Uso:
+</b>""" 
+  
+    FONT_TXT= """<b>Uso:
 Puedes usar este módulo para cambiar el estilo de la fuente.
   
 Comando: /font tu texto (opcional)
 Ejemplo: /font hola
-</b>"""
-
+</b>""" 
+  
     PURGE_TXT = """<b>Purgar
 
 Elimina muchos mensajes de los grupos!
 (Administrador)
 
-◉ /purge: elimina todos los mensajes desde el mensaje al que respondes hasta el mensaje actual.</b>"""
-
-    WHOIS_TXT = """<b>Módulo Whois
-
-Nota: Proporciona detalles de un usuario.
-Uso: /whois para obtener detalles completos de un usuario 📑
-</b>"""
-
-    JSON_TXT = """<b>
-JSON:
-El bot devuelve JSON para todos los mensajes respondidos con /json.
-
-Funciones:
-
-- Edición de mensajes en JSON
-- Soporte en mensajes privados
-- Soporte en grupos
-
-Nota:
-
-Todos pueden usar este comando; si se produce spam, el bot te baneará automáticamente del grupo.
-</b>"""
-
-    URLSHORT_TXT = """<b>Ayuda: Acortador de URL
+◉ /purge: elimina todos los mensajes desde el mensaje al que respondes hasta el mensaje actual.</b>""" 
   
-<i><b>Este comando te ayuda a acortar URLs.</b></i>
-  
-Comandos y uso:
-  
-/short: <b>Usa este comando con tu enlace para obtener un enlace corto.</b>
-Ejemplo: <code>/short https://youtu.be/example...</code>
-</b>"""
 
-    CARB_TXT = """<b>Ayuda para Carbon
+  
+    PIN_TXT = """ """
 
-Carbon es una función que hace que la imagen se muestre en la parte superior con tus textos.
-Para usar este módulo, simplemente envía el texto y ejecútalo con el comando /carbon; el bot responderá con la imagen de Carbon.
-</b>"""
-
-    GEN_PASS = """<b>Ayuda: Generador de Contraseñas
-  
-No hay nada más que saber. Envíame el límite de tu contraseña.
-- Te proporcionaré una contraseña con ese límite.
-  
-Comandos y uso: 
-• /genpassword o /genpw 20
-  
-NOTA: 
-• Solo se permiten dígitos.
-• El máximo permitido es hasta 64.
-  (No puedo generar contraseñas de longitud superior a 64)
-• IMDb debe tener privilegios de administrador.
-• Estos comandos funcionan tanto en mensajes privados como en grupos.
-• Estos comandos pueden ser usados por cualquier miembro de grupo.</b>"""
-
-    SHARE_TXT = """<b>Obtén tu URL para compartir texto.
-  
-Ejemplo: /share
-</b>"""
-
-    PIN_TXT = """<b>Módulo de Fijación
-  
-Fija un mensaje...
-Todos los comandos relacionados con fijar mensajes se pueden encontrar aquí:
-  
-📌 Comandos y uso 📌 
-  
-/pin : para fijar el mensaje en tus chats 
-/unpin : para quitar la fijación del mensaje actual</b>"""
-
+ 
     RESTART_TXT = """
 <b>¡El bot se ha reiniciado!
 
@@ -456,33 +338,33 @@ Todos los comandos relacionados con fijar mensajes se pueden encontrar aquí:
    ██║    ██╔══╝  ██║      ██╔══██║       ║██  ██║  ╔██     ██║
    ██║    ███████╗███████╗██║  ██║        ║████║   ║████████║
    ╚═╝    ╚══════╝╚══════╝╚═╝  ╚═╝        ╚════╝   ╚════════╝"""
-
+ 
     TAMIL_INFO = """
--_- """
+ """
 
     ENGLISH_INFO = """
--_- """
+ """
 
     TELUGU_INFO = """
-     -_- """
+ """
 
     HINDI_INFO = """
-     -_- """
+ """
 
     MALAYALAM_INFO = """
-"""
+ """
 
     URTU_INFO = """
-     -_- """
+"""
 
     GUJARATI_INFO = """
- -_- """
+ """
 
     KANNADA_INFO = """
- -_- ."""
+ """
 
     BANGLADESH_INFO = """
- -_- """
+ """
 
     RENAME_TXT = """
 🌌 <b><u>CÓMO CONFIGURAR LA MINIATURA</u></b>
@@ -508,6 +390,11 @@ luego selecciona [ documento, video, audio ] 👈 elige esta opción.
 """
 
 
+
+
 # Don't Remove Credit @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
+
+
+    
