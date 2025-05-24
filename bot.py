@@ -2,6 +2,8 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
+# Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
+
 import sys, glob, importlib, logging, logging.config, pytz, asyncio
 from pathlib import Path
 
@@ -16,11 +18,11 @@ from database.users_chats_db import db
 from info import *
 from utils import temp
 from typing import Union, Optional, AsyncGenerator
-from Script import script
-from datetime import date, datetime
+from Script import script 
+from datetime import date, datetime 
 from aiohttp import web
 from plugins import web_server
-# La línea 'from plugins.clone import restart_bots' ha sido eliminada.
+from plugins.clone import restart_bots
 
 from TechVJ.bot import TechVJBot
 from TechVJ.util.keepalive import ping_server
@@ -66,19 +68,22 @@ async def start():
     try:
         await TechVJBot.send_message(chat_id=LOG_CHANNEL, text=script.RESTART_TXT.format(today, time))
     except:
-        print("Haz que tu Bot sea administrador en el canal de registros con todos los derechos.")
+        print("Make Your Bot Admin In Log Channel With Full Rights")
     for ch in CHANNELS:
         try:
             k = await TechVJBot.send_message(chat_id=ch, text="**Bot Restarted**")
             await k.delete()
         except:
-            print("Haz que tu Bot sea administrador en los canales de archivo con todos los derechos.")
+            print("Make Your Bot Admin In File Channels With Full Rights")
     try:
         k = await TechVJBot.send_message(chat_id=AUTH_CHANNEL, text="**Bot Restarted**")
         await k.delete()
     except:
-        print("Haz que tu Bot sea administrador forzando la suscripción al canal con todos los derechos.")
-    # El bloque 'if CLONE_MODE == True:' y su contenido han sido eliminados.
+        print("Make Your Bot Admin In Force Subscribe Channel With Full Rights")
+    if CLONE_MODE == True:
+        print("Restarting All Clone Bots.......")
+        await restart_bots()
+        print("Restarted All Clone Bots.")
     app = web.AppRunner(await web_server())
     await app.setup()
     bind_address = "0.0.0.0"
@@ -91,3 +96,4 @@ if __name__ == '__main__':
         loop.run_until_complete(start())
     except KeyboardInterrupt:
         logging.info('Service Stopped Bye 👋')
+
